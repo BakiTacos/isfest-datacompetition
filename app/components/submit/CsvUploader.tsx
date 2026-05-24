@@ -1,8 +1,13 @@
 import { useState, useRef } from 'react';
 import { Cinzel } from 'next/font/google';
+import { createClient } from '@supabase/supabase-js';
 
 const cinzel = Cinzel({ subsets: ['latin'], weight: ['400', '700', '900'] });
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 interface CsvUploaderProps {
   teamId: string;
   quotaRemaining: number;
@@ -51,7 +56,18 @@ export default function CsvUploader({ teamId, quotaRemaining, onUploadSuccess }:
     formData.append('team_id', teamId);
 
     try {
-      const response = await fetch('/api/submit', { method: 'POST', body: formData });
+      const filePath = `submissions/${teamId}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+      .from('submissions')
+      .upload(filePath, file);
+
+      if (uploadError) throw new Error("Gagal mengunggah file ke penyimpanan.");
+
+      const response = await fetch('/api/submit', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teamId, filePath }) 
+      });
       const textResponse = await response.text();
       let result;
       try { result = JSON.parse(textResponse); } catch (e) { throw new Error("Server anomali. Gagal memecahkan mantra."); }
