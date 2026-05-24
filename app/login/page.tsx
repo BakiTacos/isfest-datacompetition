@@ -43,7 +43,7 @@ export default function LoginPage() {
 
       // 🔮 3. Jika API sukses, Cookie sudah otomatis terpasang oleh server backend.
       // Kita tinggal membuka gerbang menuju halaman submisi.
-      router.push('/submit');
+      router.push('/soal');
       router.refresh();
       
     } catch (error: any) {
