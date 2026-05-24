@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
-const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB
 const MAX_LINES = 1000000; // Mengakomodasi hingga 1 juta baris
 const DAILY_QUOTA = 5;
 
 const cleanQuote = (str: string) => str.replace(/^["']|["']$/g, '').trim();
 
+// ==========================================
+// GET: Mengambil Sisa Kuota Harian Tim
+// ==========================================
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -21,7 +23,6 @@ export async function GET(request: Request) {
 
     const { data: teamData, error: fetchError } = await supabaseAdmin
       .from('teams')
-      // 👇 Tambahkan 'final_link' di dalam select
       .select('submission_count, last_submit_date, final_link') 
       .eq('id', teamId)
       .single();
@@ -38,9 +39,8 @@ export async function GET(request: Request) {
     }
 
     // Hitung sisa kuota (maksimal 5)
-    const quotaRemaining = Math.max(0, 5 - currentCount);
+    const quotaRemaining = Math.max(0, DAILY_QUOTA - currentCount);
 
-    // 👇 Kembalikan juga finalLink ke frontend
     return NextResponse.json({ 
       quotaRemaining,
       finalLink: teamData.final_link || '' 
@@ -51,17 +51,20 @@ export async function GET(request: Request) {
   }
 }
 
+// ==========================================
+// POST: Evaluasi Prediksi (Baca Storage -> Kalkulasi RMSE)
+// ==========================================
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const teamId = formData.get('team_id') as string;
+    // 1. TERIMA JSON DARI FRONTEND
+    const body = await request.json();
+    const { teamId, filePath } = body;
 
-    if (!file || !teamId) return NextResponse.json({ error: 'Data tidak lengkap.' }, { status: 400 });
-    if (!file.name.toLowerCase().endsWith('.csv')) return NextResponse.json({ error: 'Format wajib .csv' }, { status: 415 });
-    if (file.size > MAX_FILE_SIZE) return NextResponse.json({ error: 'Ukuran file maks 16MB.' }, { status: 413 });
+    if (!teamId || !filePath) {
+      return NextResponse.json({ error: 'Mantra tidak lengkap. ID atau Path file hilang.' }, { status: 400 });
+    }
 
-    // 1. VALIDASI KUOTA HARIAN
+    // 2. VALIDASI KUOTA HARIAN (Keamanan Ganda di Server)
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
     const { data: teamData, error: fetchError } = await supabaseAdmin
       .from('teams')
@@ -73,14 +76,26 @@ export async function POST(request: Request) {
 
     let currentCount = teamData.submission_count || 0;
     if (teamData.last_submit_date !== today) currentCount = 0;
-    if (currentCount >= DAILY_QUOTA) return NextResponse.json({ error: 'Kuota 5x submisi harian habis.' }, { status: 429 });
+    if (currentCount >= DAILY_QUOTA) return NextResponse.json({ error: 'Energi sihir harian Anda telah habis.' }, { status: 429 });
 
-    // 2. PARSING CSV SUBMISI PESERTA
-    const fileText = await file.text();
+    // 3. UNDUH FILE SUBMISI DARI STORAGE
+    // supabaseAdmin akan menembus batas Private Bucket
+    const { data: fileData, error: downloadError } = await supabaseAdmin
+      .storage
+      .from('submissions')
+      .download(filePath);
+
+    if (downloadError || !fileData) {
+      console.error('Download Error:', downloadError);
+      return NextResponse.json({ error: 'Gagal menarik gulungan dari ruang penyimpanan.' }, { status: 500 });
+    }
+
+    // 4. PARSING CSV SUBMISI PESERTA
+    const fileText = await fileData.text();
     const lines = fileText.replace(/\r\n/g, '\n').trim().split('\n');
     
-    if (lines.length > MAX_LINES) return NextResponse.json({ error: 'Baris melebihi batas.' }, { status: 413 });
-    if (lines.length < 2) return NextResponse.json({ error: 'File submisi kosong.' }, { status: 400 });
+    if (lines.length > MAX_LINES) return NextResponse.json({ error: 'Baris melebihi batas yang diizinkan.' }, { status: 413 });
+    if (lines.length < 2) return NextResponse.json({ error: 'Gulungan kosong, tidak ada data prediksi.' }, { status: 400 });
 
     const submissionRows: { id: string; value: number }[] = [];
     for (let i = 1; i < lines.length; i++) {
@@ -93,7 +108,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. UNDUH & PARSING KUNCI JAWABAN DARI SUPABASE STORAGE
+    // 5. UNDUH & PARSING KUNCI JAWABAN
     const { data: storageData, error: storageError } = await supabaseAdmin
       .storage
       .from('competitions')
@@ -118,18 +133,17 @@ export async function POST(request: Request) {
       }
     }
 
-    // 4. VALIDASI JUMLAH BARIS KETAT (Identikan dengan Pandas)
+    // 6. VALIDASI JUMLAH BARIS & URUTAN
     if (solutionRows.length !== submissionRows.length) {
       return NextResponse.json({ 
-        error: `❌ Error: Jumlah baris submisi (${submissionRows.length}) tidak cocok dengan kunci jawaban (${solutionRows.length})!` 
+        error: `❌ Error: Jumlah baris (${submissionRows.length}) tidak cocok dengan kitab rahasia (${solutionRows.length})!` 
       }, { status: 400 });
     }
 
-    // Sortir kedua array berdasarkan ID secara alfabetis agar sinkron head-to-head
     solutionRows.sort((a, b) => a.id.localeCompare(b.id));
     submissionRows.sort((a, b) => a.id.localeCompare(b.id));
 
-    // 5. KALKULASI METRIK & PROTEKSI FRAUD
+    // 7. KALKULASI METRIK (RMSE) & PROTEKSI FRAUD
     let sumSquaredError = 0;
     let sumPred = 0;
     const predictedValues: number[] = [];
@@ -141,7 +155,7 @@ export async function POST(request: Request) {
 
       if (actualItem.id !== predItem.id) {
         return NextResponse.json({ 
-          error: `❌ Error: Urutan ID pada baris ke-${i+1} tidak sinkron! (Harapan: ${actualItem.id}, Diterima: ${predItem.id})` 
+          error: `❌ Error: Identitas baris ke-${i+1} tidak selaras! (Harapan: ${actualItem.id}, Diterima: ${predItem.id})` 
         }, { status: 400 });
       }
 
@@ -153,7 +167,7 @@ export async function POST(request: Request) {
 
     const rmse = Math.sqrt(sumSquaredError / n);
     
-    // Hitung Standard Deviation untuk melacak prediksi konstan (asal-asalan)
+    // Proteksi Prediksi Konstan
     const meanPred = sumPred / n;
     let sumVariance = 0;
     for (const val of predictedValues) {
@@ -162,28 +176,28 @@ export async function POST(request: Request) {
     const stdPred = Math.sqrt(sumVariance / n);
 
     if (stdPred < 1e-4) {
-      return NextResponse.json({ error: '⚠️ WARNING: Model ditolak karena mendeteksi nilai prediksi konstan/homogen.' }, { status: 406 });
+      return NextResponse.json({ error: '⚠️ WARNING: Mantra ditolak karena mendeteksi nilai prediksi yang monoton.' }, { status: 406 });
     }
     if (rmse < 0.001) {
-      return NextResponse.json({ error: '🚨 ALERT: Skor terlalu sempurna. Indikasi kebocoran dataset.' }, { status: 406 });
+      return NextResponse.json({ error: '🚨 ALERT: Skor terlalu sempurna. Terdapat anomali kebocoran.' }, { status: 406 });
     }
 
-    // 6. AMAN - UPDATE REKOR PAPAN PERINGKAT
+    // 8. UPDATE REKOR PAPAN PERINGKAT
     const isNewBest = teamData.best_rmse === null || rmse < teamData.best_rmse;
     const updatePayload: any = { submission_count: currentCount + 1, last_submit_date: today };
     if (isNewBest) updatePayload.best_rmse = rmse;
 
     const { error: updateError } = await supabaseAdmin.from('teams').update(updatePayload).eq('id', teamId);
-    if (updateError) return NextResponse.json({ error: 'Gagal memperbarui rekor asrama.' }, { status: 500 });
+    if (updateError) return NextResponse.json({ error: 'Gagal memahat rekor asrama ke dalam pilar batu.' }, { status: 500 });
 
     return NextResponse.json({
       success: true,
       rmse,
-      message: isNewBest ? 'Rekor baru tercipta!' : 'Skor berhasil dihitung. Evaluasi model dinamis dan wajar.'
+      message: isNewBest ? 'Mantra sempurna! Rekor baru tercipta.' : 'Skor tercatat. Evaluasi kekuatan mantra Anda kembali.'
     });
 
   } catch (err: any) {
     console.error('API Error:', err);
-    return NextResponse.json({ error: 'Terjadi anomali pada sistem juri.' }, { status: 500 });
+    return NextResponse.json({ error: 'Terjadi guncangan pada inti server.' }, { status: 500 });
   }
 }
