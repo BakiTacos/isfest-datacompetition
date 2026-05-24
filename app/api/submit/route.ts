@@ -190,6 +190,32 @@ export async function POST(request: Request) {
     const { error: updateError } = await supabaseAdmin.from('teams').update(updatePayload).eq('id', teamId);
     if (updateError) return NextResponse.json({ error: 'Gagal memahat rekor asrama ke dalam pilar batu.' }, { status: 500 });
 
+    try {
+      if (isNewBest) {
+        // Jika ini rekor baru, cari semua file lama di folder tim dan hapus
+        const { data: existingFiles } = await supabaseAdmin.storage.from('submissions').list(teamId);
+        
+        if (existingFiles && existingFiles.length > 0) {
+          const currentFileName = filePath.split('/').pop(); // Ambil nama file saja
+          
+          // Filter file yang BUKAN file yang baru saja diunggah ini
+          const filesToDelete = existingFiles
+            .filter(f => f.name !== currentFileName) 
+            .map(f => `${teamId}/${f.name}`); // Format path untuk dihapus
+            
+          if (filesToDelete.length > 0) {
+            await supabaseAdmin.storage.from('submissions').remove(filesToDelete);
+          }
+        }
+      } else {
+        // Jika BUKAN rekor baru, skor tetap dicatat di atas, tapi filenya LANGSUNG DIHAPUS
+        await supabaseAdmin.storage.from('submissions').remove([filePath]);
+      }
+    } catch (cleanupError) {
+      // Kita log saja, jangan gagalkan response karena skor sudah berhasil dicatat
+      console.error("Gagal membersihkan ruang penyimpanan:", cleanupError);
+    }
+
     return NextResponse.json({
       success: true,
       rmse,

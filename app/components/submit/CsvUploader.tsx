@@ -56,7 +56,7 @@ export default function CsvUploader({ teamId, quotaRemaining, onUploadSuccess }:
     formData.append('team_id', teamId);
 
     try {
-      const filePath = `submissions/${teamId}/${Date.now()}_${file.name}`;
+      const filePath = `${teamId}/${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
       .from('submissions')
       .upload(filePath, file);
