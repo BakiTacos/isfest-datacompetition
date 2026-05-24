@@ -22,7 +22,7 @@ export default function SplashScreen() {
     // Mulai animasi memudar setelah 2.5 detik
     const fadeTimer = setTimeout(() => {
       setIsFadingOut(true);
-    }, 3500);
+    }, 2500);
 
     // Hapus komponen dari layar setelah 3.5 detik
     const removeTimer = setTimeout(() => {
