@@ -92,6 +92,28 @@ export default function SoalPage() {
           </div>
         </div>
 
+        {/* KONTEN UTAMA: BUKU PANDUAN (Menggunakan Buku Terbuka) */}
+        <div className="w-full bg-[#172135]/60 rounded-3xl shadow-2xl shadow-black/50 overflow-hidden border border-slate-600/30 backdrop-blur-xl p-6 md:p-10 mb-8">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="w-32 h-32 md:w-40 md:h-40 shrink-0 bg-slate-800/50 rounded-2xl border border-slate-600/50 flex items-center justify-center relative shadow-inner animate-[float_4s_ease-in-out_infinite] p-4">
+              {/* Ganti Emoji 📖 dengan book-open.png */}
+              <Image src="/assets/blank-paper.png" alt="Soal Panduan" fill className="object-contain p-4 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]" />
+            </div>
+            <div className="flex-1 text-center md:text-left">
+              <h1 className={`${cinzel.className} text-2xl md:text-3xl font-bold text-white tracking-wider mb-3`}>
+                Soal
+              </h1>
+              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                Pelajari seluruh ketentuan soal, format jawaban, kriteria penilaian, serta mekanisme pengerjaan dengan saksama. Pastikan asrama Anda membaca panduan ini sebelum mulai menyusun strategi dan menaklukkan setiap tantangan soal.
+              </p>
+              <a href="/files/Handbook_ISFEST.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#ffec1f] hover:bg-white text-slate-900 font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-xl transition-colors shadow-[0_0_15px_rgba(255,236,31,0.3)]">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                Buka Soal
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* KONTEN KEDUA: GRID DATASET */}
         <div className="w-full">
           <div className="text-center mb-6">
