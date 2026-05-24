@@ -4,6 +4,11 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  const isMaintenance = false; // Set ke FALSE jika ingin website normal kembali
+  if (isMaintenance && !request.nextUrl.pathname.startsWith('/maintenance')) {
+    return NextResponse.redirect(new URL('/maintenance', request.url));
+  }
+
   // 1. Cek apakah ini path admin
   if (pathname.startsWith('/admin')) {
     // Kecualikan halaman login admin agar tidak redirect loop
