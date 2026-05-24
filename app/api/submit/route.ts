@@ -21,7 +21,8 @@ export async function GET(request: Request) {
 
     const { data: teamData, error: fetchError } = await supabaseAdmin
       .from('teams')
-      .select('submission_count, last_submit_date')
+      // 👇 Tambahkan 'final_link' di dalam select
+      .select('submission_count, last_submit_date, final_link') 
       .eq('id', teamId)
       .single();
 
@@ -39,7 +40,11 @@ export async function GET(request: Request) {
     // Hitung sisa kuota (maksimal 5)
     const quotaRemaining = Math.max(0, 5 - currentCount);
 
-    return NextResponse.json({ quotaRemaining });
+    // 👇 Kembalikan juga finalLink ke frontend
+    return NextResponse.json({ 
+      quotaRemaining,
+      finalLink: teamData.final_link || '' 
+    });
   } catch (err: any) {
     console.error('API GET Error:', err);
     return NextResponse.json({ error: 'Gagal memuat status kuota.' }, { status: 500 });

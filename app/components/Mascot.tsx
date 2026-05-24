@@ -5,10 +5,11 @@ import Image from 'next/image';
 
 const SPELLS = [
   "Alohomora! Semoga model regresi Anda terbuka jalannya menuju puncak! 🪄",
-  "Expecto Patronum! Usir jauh-jauh Overfitting dari arsitektur XGBoost Anda! 🌌",
+  "Expecto Patronum! Usir jauh-jauh Overfitting dari arsitektur model Anda! 🌌",
   "Kombinasi parameter Anda memancarkan aura magis yang kuat! 🧪",
   "Ribbit! Tingkat eror RMSE sekecil ini hanya bisa dicapai oleh penyihir data sejati! 🐸",
-  "Forge the Future! Terus lakukan tuning, puncak House Standings sudah dekat! ✨"
+  "Forge the Future! Terus lakukan tuning, puncak House Standings sudah dekat! ✨",
+  "Unleash Your Magic, Forge the Future!"
 ];
 
 export default function Mascot() {
