@@ -50,12 +50,16 @@ export default function AddTeamPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Gagal menambahkan tim.');
+        // Jangan tampilkan data.error jika isinya pesan sistem database yang sensitif
+        // Tampilkan pesan umum yang aman
+        throw new Error(data.error || 'Terjadi kesalahan sistem.');
       }
 
       setStatus({ type: 'success', text: data.message });
       setTeamName('');
       setPassword('');
+
+      setTimeout(() => setStatus(null), 5000);
     } catch (err: any) {
       setStatus({ type: 'error', text: err.message });
     } finally {
