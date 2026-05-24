@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
-import MascotSide from '../components/Mascot-Side'; // 👈 IMPORT MASKOT DI SINI
+import MascotSide from '../components/Mascot-Side';
 import Image from 'next/image';
 import { Cinzel } from 'next/font/google';
 
@@ -58,10 +58,11 @@ export default function SoalPage() {
 
       <div className="flex-grow max-w-5xl w-full mx-auto px-4 md:px-6 py-8 relative z-10 flex flex-col items-center">
         
-        {/* PANEL IDENTITAS */}
+        {/* PANEL IDENTITAS (Menggunakan Topi Penyihir) */}
         <div className="w-full bg-[#131b2c]/80 border border-slate-600/40 rounded-2xl p-5 mb-8 backdrop-blur-md flex flex-row items-center gap-4 shadow-xl shadow-black/40">
-          <div className="w-12 h-12 rounded-full bg-[#ffec1f]/10 border border-[#ffec1f]/30 flex items-center justify-center text-xl shadow-[0_0_10px_rgba(255,236,31,0.2)] shrink-0">
-            📚
+          <div className="w-12 h-12 rounded-full bg-[#172135] border border-[#ffec1f]/30 flex items-center justify-center relative shadow-[0_0_10px_rgba(255,236,31,0.2)] shrink-0 overflow-hidden">
+            {/* Ganti Emoji 📚 dengan witch-hat.png */}
+            <Image src="/assets/witch-hat.png" alt="Asrama" width={32} height={32} className="object-contain drop-shadow-md" />
           </div>
           <div>
             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Akses Diberikan Kepada Asrama</h3>
@@ -69,11 +70,12 @@ export default function SoalPage() {
           </div>
         </div>
 
-        {/* KONTEN UTAMA: BUKU PANDUAN */}
+        {/* KONTEN UTAMA: BUKU PANDUAN (Menggunakan Buku Terbuka) */}
         <div className="w-full bg-[#172135]/60 rounded-3xl shadow-2xl shadow-black/50 overflow-hidden border border-slate-600/30 backdrop-blur-xl p-6 md:p-10 mb-8">
           <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="w-32 h-32 md:w-40 md:h-40 shrink-0 bg-slate-800/50 rounded-2xl border border-slate-600/50 flex items-center justify-center text-6xl shadow-inner animate-[float_4s_ease-in-out_infinite]">
-              📖
+            <div className="w-32 h-32 md:w-40 md:h-40 shrink-0 bg-slate-800/50 rounded-2xl border border-slate-600/50 flex items-center justify-center relative shadow-inner animate-[float_4s_ease-in-out_infinite] p-4">
+              {/* Ganti Emoji 📖 dengan book-open.png */}
+              <Image src="/assets/book-open.png" alt="Kitab Panduan" fill className="object-contain p-4 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]" />
             </div>
             <div className="flex-1 text-center md:text-left">
               <h1 className={`${cinzel.className} text-2xl md:text-3xl font-bold text-white tracking-wider mb-3`}>
@@ -101,41 +103,49 @@ export default function SoalPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            {/* TRAIN DATA */}
+            {/* TRAIN DATA (Menggunakan Tumpukan Buku) */}
             <div className="bg-[#131b2c]/80 border border-slate-600/40 rounded-2xl p-6 backdrop-blur-md flex flex-col items-center text-center hover:border-emerald-500/50 hover:bg-[#172135] transition-all group">
-              <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📊</div>
+              <div className="relative w-20 h-20 mb-4 group-hover:scale-110 transition-transform">
+                {/* Ganti Emoji 📊 dengan book-stack.png */}
+                <Image src="/assets/book-stack.png" alt="Data Latih" fill className="object-contain drop-shadow-lg" />
+              </div>
               <h3 className="font-bold text-slate-200 text-lg mb-2">Train.csv</h3>
               <p className="text-slate-400 text-xs mb-6 flex-grow">
                 Gulungan data historis yang memuat fitur perbankan beserta <span className="text-emerald-400 font-semibold">jawaban target</span> untuk melatih model Anda.
               </p>
-              <a href="/files/train.csv" download className="w-full bg-slate-800 hover:bg-emerald-600 border border-slate-600 hover:border-emerald-500 text-slate-300 hover:text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded-lg transition-colors">Unduh Data Latih</a>
+              <a href="https://drive.google.com/uc?export=download&id=1PWtEMFkDdvdGpbfzWKW7YpcQ1eUBn40T" download className="w-full bg-slate-800 hover:bg-emerald-600 border border-slate-600 hover:border-emerald-500 text-slate-300 hover:text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded-lg transition-colors">Unduh Data Latih</a>
             </div>
 
-            {/* TEST DATA */}
+            {/* TEST DATA (Menggunakan Buku Terbuka Kecil / Quill) */}
             <div className="bg-[#131b2c]/80 border border-slate-600/40 rounded-2xl p-6 backdrop-blur-md flex flex-col items-center text-center hover:border-blue-500/50 hover:bg-[#172135] transition-all group">
-              <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🔮</div>
+              <div className="relative w-20 h-20 mb-4 group-hover:scale-110 transition-transform">
+                {/* Ganti Emoji 🔮 dengan quill.png (pena bulu) */}
+                <Image src="/assets/quill.png" alt="Data Uji" fill className="object-contain drop-shadow-lg" />
+              </div>
               <h3 className="font-bold text-slate-200 text-lg mb-2">Test.csv</h3>
               <p className="text-slate-400 text-xs mb-6 flex-grow">
                 Data uji yang <span className="text-blue-400 font-semibold">tidak memiliki target</span>. Ramalkan nilainya menggunakan model terbaik yang telah asrama Anda latih.
               </p>
-              <a href="/files/test.csv" download className="w-full bg-slate-800 hover:bg-blue-600 border border-slate-600 hover:border-blue-500 text-slate-300 hover:text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded-lg transition-colors">Unduh Data Uji</a>
+              <a href="https://drive.google.com/uc?export=download&id=1yl1eubSrMG4Tl_OO5U1B3xdgdZu-dY7b" download className="w-full bg-slate-800 hover:bg-blue-600 border border-slate-600 hover:border-blue-500 text-slate-300 hover:text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded-lg transition-colors">Unduh Data Uji</a>
             </div>
 
-            {/* SAMPLE SUBMISSION */}
+            {/* SAMPLE SUBMISSION (Bisa menggunakan gambar gulungan jika ada, atau quill lagi) */}
             <div className="bg-[#131b2c]/80 border border-slate-600/40 rounded-2xl p-6 backdrop-blur-md flex flex-col items-center text-center hover:border-amber-500/50 hover:bg-[#172135] transition-all group">
-              <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📜</div>
+              <div className="relative w-20 h-20 mb-4 group-hover:scale-110 transition-transform">
+                {/* Ganti Emoji 📜 dengan elemen lain yang sesuai, contoh pakai topi penyihir lagi atau quill */}
+                <Image src="/assets/letter.png" alt="Format Submisi" fill className="object-contain drop-shadow-lg" />
+              </div>
               <h3 className="font-bold text-slate-200 text-lg mb-2">Sample_Submission.csv</h3>
               <p className="text-slate-400 text-xs mb-6 flex-grow">
                 Cetak biru format jawaban yang diterima oleh sistem juri otomatis di Ruang Submisi.
               </p>
-              <a href="/files/sample_submission.csv" download className="w-full bg-slate-800 hover:bg-amber-600 border border-slate-600 hover:border-amber-500 text-slate-300 hover:text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded-lg transition-colors">Unduh Format</a>
+              <a href="https://drive.google.com/uc?export=download&id=1n8r1d_I3I1Organd9pDmteSmsjZdXTA2" download className="w-full bg-slate-800 hover:bg-amber-600 border border-slate-600 hover:border-amber-500 text-slate-300 hover:text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded-lg transition-colors">Unduh Format</a>
             </div>
 
           </div>
         </div>
       </div>
 
-      {/* 🔮 MASKOT DITAMBAHKAN DI SINI */}
       <MascotSide />
 
     </main>

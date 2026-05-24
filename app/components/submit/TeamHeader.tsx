@@ -1,4 +1,5 @@
 import { Cinzel } from 'next/font/google';
+import Image from 'next/image'; // 👈 1. Import Image dari Next.js
 
 const cinzel = Cinzel({ subsets: ['latin'], weight: ['400', '700', '900'] });
 
@@ -12,9 +13,20 @@ export default function TeamHeader({ teamName, quotaRemaining, onLogout }: TeamH
   return (
     <div className="w-full bg-[#131b2c]/80 border border-slate-600/40 rounded-2xl p-5 mb-6 backdrop-blur-md flex flex-col md:flex-row items-center justify-between shadow-xl shadow-black/40">
       <div className="flex items-center gap-4 w-full md:w-auto mb-4 md:mb-0">
-        <div className="w-12 h-12 rounded-full bg-[#ffec1f]/10 border border-[#ffec1f]/30 flex items-center justify-center text-xl shadow-[0_0_10px_rgba(255,236,31,0.2)] shrink-0">
-          🧙‍♂️
+        
+        {/* === BAGIAN YANG DIUBAH === */}
+        <div className="w-12 h-12 rounded-full bg-[#ffec1f]/10 border border-[#ffec1f]/30 flex items-center justify-center shadow-[0_0_10px_rgba(255,236,31,0.2)] shrink-0 overflow-hidden relative">
+          {/* 👈 2. Ganti emoji 🧙‍♂️ dengan komponen Image */}
+          <Image 
+            src="/assets/witch-hat.png" // 👈 Path gambar Anda
+            alt="Witch Hat Icon"
+            width={32} // Ukuran sedikit lebih kecil dari container agar ada padding
+            height={32}
+            className="object-contain drop-shadow-md" // Agar proporsi terjaga dan ada bayangan halus
+          />
         </div>
+        {/* ========================== */}
+
         <div>
           <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Asrama Aktif</h3>
           <h2 className={`${cinzel.className} text-lg md:text-xl font-bold text-[#ffec1f]`}>{teamName}</h2>
