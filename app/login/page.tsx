@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase'; // Memanggil client aman (Anon Key)
 import Image from 'next/image';
 import Link from 'next/link';
 import { Cinzel } from 'next/font/google';
@@ -26,27 +25,29 @@ export default function LoginPage() {
     setErrorMsg('');
 
     try {
-      // 🔮 Validasi langsung ke tabel 'teams'
-      const { data, error } = await supabase
-        .from('teams')
-        .select('id, team_name')
-        .eq('username', username.trim()) // Cek username
-        .eq('password', password)        // Cek password
-        .single(); // Harus persis ketemu 1 baris
+      // 🔮 1. Kirim data ke API Backend (bukan query langsung ke Supabase)
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }), // Pastikan formatnya sesuai dengan API
+      });
 
-      if (error || !data) {
-        throw new Error('Mantra ditolak! Username asrama atau kata sandi Anda salah.');
+      const data = await res.json();
+
+      // 🔮 2. Jika API merespons dengan status gagal (401/400/500)
+      if (!res.ok) {
+        throw new Error(data.error || 'Terjadi anomali saat memverifikasi mantra.');
       }
 
-      // Jika berhasil, simpan ID dan Nama Tim ke dalam Cookie
-      document.cookie = `team_id=${data.id}; path=/; max-age=86400`;
-      document.cookie = `team_name=${encodeURIComponent(data.team_name)}; path=/; max-age=86400`;
-
-      // Buka gerbang menuju halaman submisi
+      // 🔮 3. Jika API sukses, Cookie sudah otomatis terpasang oleh server backend.
+      // Kita tinggal membuka gerbang menuju halaman submisi.
       router.push('/submit');
       router.refresh();
       
     } catch (error: any) {
+      // Tampilkan pesan error spesifik dari Backend (misal: "Kata sandi asrama Anda salah.")
       setErrorMsg(error.message);
     } finally {
       setLoading(false);
@@ -107,7 +108,7 @@ export default function LoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-[#0a101d]/50 border border-slate-600/50 rounded-xl px-4 py-3.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-[#ffec1f] focus:ring-1 focus:ring-[#ffec1f]/50 transition-all text-sm"
-                placeholder="e.g. macm3"
+                placeholder="e.g. gryffindordata"
               />
             </div>
 

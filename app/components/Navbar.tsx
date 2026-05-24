@@ -8,7 +8,6 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-
     <nav className="border-b border-slate-700/30 bg-[#0a101d]/40 backdrop-blur-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         {/* Logo */}
@@ -43,7 +42,7 @@ export default function Navbar() {
         {/* Mobile Hamburger Trigger */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden p-2 text-slate-400 hover:text-[#ffec1f]"
+          className="md:hidden p-2 text-slate-400 hover:text-[#ffec1f] transition-colors"
           aria-label="Toggle Menu"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -56,23 +55,38 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile Menu Dropdown */}
-      {isOpen && (
-        <div className="md:hidden border-b border-slate-700/50 bg-[#0a101d]/90 backdrop-blur-md px-4 pt-2 pb-5 space-y-4">
-          <Link href="/" className="block px-3 py-2 text-sm font-medium text-slate-300 hover:text-[#ffec1f]">
+      {/* Mobile Menu Dropdown - Menggunakan Glassmorphism dari Nav Induk */}
+      <div
+        className={`
+          md:hidden overflow-hidden transition-all duration-300 ease-in-out
+          ${isOpen ? 'max-h-96 opacity-100 border-t border-slate-700/30' : 'max-h-0 opacity-0'}
+        `}
+      >
+        {/* Container ini transparan & sejajar dengan grid utama */}
+        <div className="max-w-7xl mx-auto px-6 py-5 space-y-4">
+          <Link
+            href="/"
+            className="block px-3 py-2 text-sm font-medium text-slate-300 hover:text-[#ffec1f] hover:bg-slate-800/40 rounded-lg transition-all"
+            onClick={() => setIsOpen(false)}
+          >
             Leaderboard
           </Link>
-          <Link href="/soal" className="block px-3 py-2 text-sm font-medium text-slate-300 hover:text-[#ffec1f]">
+          <Link
+            href="/soal"
+            className="block px-3 py-2 text-sm font-medium text-slate-300 hover:text-[#ffec1f] hover:bg-slate-800/40 rounded-lg transition-all"
+            onClick={() => setIsOpen(false)}
+          >
             Soal
           </Link>
           <Link
             href="/submit"
-            className="block text-center px-4 py-3 rounded-xl bg-[#f59e0b] text-slate-950 font-bold text-sm"
+            className="block text-center px-4 py-3 mt-2 rounded-xl bg-[#f59e0b] text-slate-950 font-bold text-sm transition-all hover:bg-[#d97706]"
+            onClick={() => setIsOpen(false)}
           >
             Submission
           </Link>
         </div>
-      )}
+      </div>
     </nav>
   );
 }

@@ -26,9 +26,10 @@ export default function Mascot() {
   };
 
   return (
-    <div className="relative flex flex-col items-center w-full">
-      {/* Gelembung Mantra Penyihir (Spell Bubble) */}
-      <div className={`absolute -top-12 md:-top-16 z-20 max-w-[260px] bg-[#223753]/95 border border-[#ffec1f]/40 px-4 py-3 rounded-2xl text-xs text-slate-100 shadow-xl transition-all duration-300 backdrop-blur-md text-center font-medium ${
+    // Tambahkan padding-top di mobile agar maskot turun dan bubble tidak ketutup navbar
+    <div className="relative flex flex-col items-center w-full pt-12 md:pt-0">
+      {/* Gelembung Mantra Penyihir (Spell Bubble) - posisi tetap di atas */}
+      <div className={`absolute -top-2 md:-top-16 z-20 max-w-[260px] bg-[#223753]/95 border border-[#ffec1f]/40 px-4 py-3 rounded-2xl text-xs text-slate-100 shadow-xl transition-all duration-300 backdrop-blur-md text-center font-medium ${
         showBubble ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2 pointer-events-none'
       }`}>
         <p className="leading-relaxed">{activeSpell}</p>
