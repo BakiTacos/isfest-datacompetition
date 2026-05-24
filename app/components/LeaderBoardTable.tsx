@@ -7,9 +7,6 @@ export interface TeamLeaderboard {
   id: string;
   team_name: string;
   best_rmse: number | null;
-  has_ipynb: boolean;    
-  has_ppt: boolean;    
-  has_laporan: boolean;
 }
 
 interface LeaderboardTableProps {
