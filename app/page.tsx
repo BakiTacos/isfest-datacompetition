@@ -7,18 +7,46 @@ import Image from 'next/image';
 
 export const dynamic = 'force-dynamic';
 
+// 👇 PERBAIKAN 1: Fungsi untuk membaca status gerbang deadline dari database
+async function getDeadlineStatus(): Promise<boolean> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('global_config')
+      .select('value')
+      .eq('key', 'is_deadline_closed')
+      .single();
+    
+    if (error) return false; // Default aman: false (Live)
+    return data?.value ?? false;
+  } catch (err) {
+    return false;
+  }
+}
+
+// 👇 PERBAIKAN 2: Perbarui query SELECT untuk menarik status file dan poin juri
 async function getLeaderboardData(): Promise<TeamLeaderboard[]> {
   try {
     const { data, error } = await supabaseAdmin
       .from('teams')
-      .select('id, team_name, best_rmse')
+      // Tambahkan kolom berkas dan poin akhir di sini
+      .select('id, team_name, best_rmse, has_ipynb, has_ppt, has_laporan, final_score') 
       .order('best_rmse', { ascending: true, nullsFirst: false });
 
     if (error) {
       console.error('🚨 Supabase DB Error:', error.message);
       return [];
     }
-    return data || [];
+    
+    // Konversi mapping data jika nama kolom di DB berbeda dengan di interface Frontend
+    return (data || []).map(team => ({
+      id: team.id,
+      team_name: team.team_name,
+      best_rmse: team.best_rmse,
+      has_ipynb: team.has_ipynb ?? false,
+      has_ppt: team.has_ppt ?? false,
+      has_laporan: team.has_laporan ?? false,
+      final_points: team.final_score ?? null // Mapping final_score (DB) ke final_points (UI)
+    }));
   } catch (err: any) {
     console.error('🚨 Critical Server Error:', err.message);
     return [];
@@ -26,7 +54,11 @@ async function getLeaderboardData(): Promise<TeamLeaderboard[]> {
 }
 
 export default async function HomePage() {
-  const leaderboard = await getLeaderboardData();
+  // 👇 PERBAIKAN 3: Jalankan kedua fetch secara paralel agar halaman render lebih cepat
+  const [leaderboard, isDeadlineClosed] = await Promise.all([
+    getLeaderboardData(),
+    getDeadlineStatus()
+  ]);
 
   return (
     <main className="min-h-screen text-slate-200 font-sans relative overflow-x-hidden selection:bg-[#ffec1f]/20 selection:text-[#ffec1f]">
@@ -39,21 +71,24 @@ export default async function HomePage() {
 
       <Navbar />
 
-      {/* 👇 PERBAIKAN 1: pt-8 md:pt-12 diubah menjadi pt-24 lg:pt-32 untuk memberi ruang pada Navbar & Chat Bubble */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 pt-24 lg:pt-32 pb-12 relative z-10">
         <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8 lg:gap-12 items-start justify-center">
           
-          {/* 👇 PERBAIKAN 2: sticky top-24 diubah menjadi top-32 agar Maskot tidak berhenti terlalu mepet atas */}
+          {/* Kolom Maskot */}
           <div className="lg:col-span-4 flex flex-col items-center justify-start w-full sticky top-32">
             <div className="w-[80%] sm:w-[90%] md:w-full max-w-[280px] lg:w-full lg:max-w-none">
               <Mascot />
             </div>
           </div>
 
-          {/* 👇 PERBAIKAN 3: Papan Peringkat & Activity Log digabung di kolom kanan */}
+          {/* Kolom Tabel & Log Aktivitas */}
           <div className="lg:col-span-8 w-full flex flex-col gap-8">
             
-            <LeaderboardTable data={leaderboard} />
+            {/* 👇 Teruskan status penutup gerbang ke dalam komponen tabel */}
+            <LeaderboardTable 
+              data={leaderboard} 
+              isDeadlineClosed={isDeadlineClosed} 
+            />
             
             <ActivityLog /> 
 

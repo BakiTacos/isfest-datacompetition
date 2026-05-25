@@ -2,68 +2,84 @@
 
 import { useState } from 'react';
 
-// Interface tipe data
+// 1. Pembaruan Interface: Tambahkan indikator file dan poin
 export interface TeamLeaderboard {
   id: string;
   team_name: string;
   best_rmse: number | null;
+  has_ipynb: boolean;
+  has_ppt: boolean;
+  has_laporan: boolean;
+  final_points?: number | null; // Opsional, berisi nilai jika sudah dihitung
 }
 
 interface LeaderboardTableProps {
   data: TeamLeaderboard[];
+  isDeadlineClosed: boolean; // Toggle pembuka rahasia poin akhir
 }
 
-export default function LeaderboardTable({ data }: LeaderboardTableProps) {
-  // State untuk Paginasi
+export default function LeaderboardTable({ data, isDeadlineClosed }: LeaderboardTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
-  // Kalkulasi total halaman
   const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
-  
-  // Memotong data sesuai halaman aktif
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentData = data.slice(startIndex, endIndex);
+  
+
+  // Komponen kecil untuk Badge Status File
+  const StatusBadge = ({ isUploaded, label }: { isUploaded: boolean, label: string }) => (
+    <div className={`flex items-center gap-1 text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+      isUploaded 
+        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.15)]' 
+        : 'bg-slate-700/30 text-slate-500 border-slate-600/30'
+    }`}>
+      <span>{isUploaded ? '✓' : '−'}</span>
+      <span className="hidden md:inline">{label}</span>
+      <span className="md:hidden">{label.substring(0, 3)}</span>
+    </div>
+  );
 
   return (
     <div className="bg-[#172135]/40 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden border border-slate-600/30 backdrop-blur-md flex flex-col">
       
-      {/* Header Leaderboard */}
       <div className="px-5 py-5 md:px-8 md:py-6 border-b border-slate-600/30 flex items-center justify-between bg-[#131b2c]/50">
         <div className="flex items-center gap-3">
           <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
-            Leaderboard
+            {isDeadlineClosed ? 'Klasemen Akhir' : 'Leaderboard'}
           </h2>
         </div>
       </div>
 
-      {/* Tabel Peringkat */}
       <div className="overflow-x-auto w-full">
         <table className="w-full text-left border-collapse">
           <thead className="bg-[#172135]/30 text-slate-300 text-xs font-semibold uppercase tracking-[0.12em]">
             <tr className="border-b border-slate-600/30">
               <th className="py-4 px-4 md:py-5 md:px-8 text-center w-16 md:w-28">Rank</th>
-              <th className="py-4 px-4 md:py-5 md:px-8">Nama Kelompok</th>
-              <th className="py-4 px-4 md:py-5 md:px-8 text-right w-32 md:w-48">
-                Skor Terbaik <span className="hidden md:inline">(RMSE)</span>
+              <th className="py-4 px-4 md:py-5 md:px-8">Nama Kelompok & Berkas</th>
+              <th className="py-4 px-4 md:py-5 md:px-8 text-center w-28 md:w-40">
+                RMSE
               </th>
+              {/* Kolom Poin Muncul Jika Deadline Tutup */}
+              {isDeadlineClosed && (
+                <th className="py-4 px-4 md:py-5 md:px-8 text-right w-24 md:w-36 text-[#ffec1f]">
+                  Poin
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-600/20 text-sm">
             {currentData.length === 0 ? (
               <tr>
-                <td colSpan={3} className="py-16 text-center text-slate-400 italic">
+                <td colSpan={isDeadlineClosed ? 4 : 3} className="py-16 text-center text-slate-400 italic">
                   Belum ada kelompok yang melakukan submisi.
                 </td>
               </tr>
             ) : (
               currentData.map((team, index) => {
-                // Menghitung Rank Global (bukan rank per halaman)
                 const globalRank = startIndex + index + 1;
-                const isTop3 = globalRank <= 3;
                 
-                // Style medali hanya berlaku untuk Top 3 keseluruhan
                 let badgeStyle = 'border-slate-500/30 bg-slate-600/10 text-slate-300';
                 if (globalRank === 1) badgeStyle = 'border-[#ffec1f]/60 bg-[#ffec1f]/15 text-[#ffec1f] drop-shadow-[0_0_8px_rgba(255,236,31,0.3)]';
                 else if (globalRank === 2) badgeStyle = 'border-slate-300/50 bg-slate-400/15 text-slate-200';
@@ -76,18 +92,37 @@ export default function LeaderboardTable({ data }: LeaderboardTableProps) {
                         #{globalRank}
                       </div>
                     </td>
-                    <td className="py-3 px-3 md:py-4 md:px-8 font-semibold text-slate-100 tracking-wide text-xs md:text-sm max-w-[140px] md:max-w-none truncate md:whitespace-normal">
-                      {team.team_name}
+                    
+                    <td className="py-3 px-3 md:py-4 md:px-8">
+                      <div className="flex flex-col gap-1.5 md:gap-2">
+                        <span className="font-semibold text-slate-100 tracking-wide text-xs md:text-sm truncate">
+                          {team.team_name}
+                        </span>
+                        {/* Area Indikator Status File */}
+                        <div className="flex items-center gap-1.5 md:gap-2">
+                          <StatusBadge isUploaded={team.has_ipynb} label="Code" />
+                          <StatusBadge isUploaded={team.has_laporan} label="Doc" />
+                          <StatusBadge isUploaded={team.has_ppt} label="PPT" />
+                        </div>
+                      </div>
                     </td>
-                    <td className="py-3 px-3 md:py-4 md:px-8 text-right font-mono text-[#ffec1f] font-extrabold text-sm md:text-base tracking-wide">
+
+                    <td className="py-3 px-3 md:py-4 md:px-8 text-center font-mono text-slate-300 font-medium text-xs md:text-sm tracking-wide">
                       {team.best_rmse !== null ? (
                         team.best_rmse.toFixed(5)
                       ) : (
-                        <span className="text-slate-500 font-sans font-normal text-xs italic">
-                          -
-                        </span>
+                        <span className="text-slate-500 font-sans font-normal text-xs italic">-</span>
                       )}
                     </td>
+
+                    {/* Sel Poin Muncul Jika Deadline Tutup */}
+                    {isDeadlineClosed && (
+                      <td className="py-3 px-3 md:py-4 md:px-8 text-right font-mono text-[#ffec1f] font-extrabold text-sm md:text-base tracking-wide">
+                        {team.final_points !== undefined && team.final_points !== null 
+                          ? team.final_points 
+                          : '-'}
+                      </td>
+                    )}
                   </tr>
                 );
               })
@@ -96,7 +131,6 @@ export default function LeaderboardTable({ data }: LeaderboardTableProps) {
         </table>
       </div>
 
-      {/* Kontrol Paginasi (Muncul Jika Data > 0) */}
       {data.length > 0 && (
         <div className="px-5 py-4 border-t border-slate-600/30 bg-[#131b2c]/40 flex items-center justify-between mt-auto">
           <span className="text-[10px] md:text-xs text-slate-400 font-medium">

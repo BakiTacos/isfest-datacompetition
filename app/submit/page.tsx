@@ -21,6 +21,9 @@ export default function SubmitPage() {
   // State untuk menampilkan hasil submission
   const [currentScore, setCurrentScore] = useState<number | null>(null);
   const [scoreMessage, setScoreMessage] = useState<string>('');
+  
+  // State BARU untuk status gerbang
+  const [isDeadlineClosed, setIsDeadlineClosed] = useState<boolean>(false);
 
   useEffect(() => {
     const getCookie = (name: string) => {
@@ -41,11 +44,21 @@ export default function SubmitPage() {
       
       const fetchCurrentStatus = async () => {
         try {
-          const response = await fetch(`/api/submit?team_id=${id}`);
-          if (response.ok) {
-            const data = await response.json();
+          // Ambil data tim dan status deadline secara paralel agar lebih cepat
+          const [statusRes, configRes] = await Promise.all([
+            fetch(`/api/submit?team_id=${id}`),
+            fetch('/api/config')
+          ]);
+
+          if (statusRes.ok) {
+            const data = await statusRes.json();
             setQuotaRemaining(data.quotaRemaining);
             if (data.finalLink) setInitialDriveLink(data.finalLink);
+          }
+
+          if (configRes.ok) {
+            const configData = await configRes.json();
+            setIsDeadlineClosed(configData.isDeadlineClosed);
           }
         } catch (err) {
           console.error("Gagal menyinkronkan data asrama:", err);
@@ -96,18 +109,50 @@ export default function SubmitPage() {
           <ScoreCard score={currentScore} message={scoreMessage} />
         )}
 
-        {/* 3. Panel Unggah CSV */}
-        <CsvUploader 
-          teamId={teamId} 
-          quotaRemaining={quotaRemaining} 
-          onUploadSuccess={handleUploadSuccess} 
-        />
+        {/* LOGIKA BLOKIR DEADLINE: Render bersyarat berdasarkan isDeadlineClosed */}
+        {isDeadlineClosed ? (
+          <div className="w-full mt-6 p-6 md:p-8 bg-red-950/30 border border-red-500/40 rounded-2xl text-center backdrop-blur-md shadow-[0_0_30px_rgba(239,68,68,0.15)] animate-fade-in">
+            <div className="text-4xl mb-4 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">⏳</div>
+            <h3 className="text-xl md:text-2xl font-bold text-red-400 mb-3 tracking-wide">
+              Gerbang Waktu Telah Terkunci!
+            </h3>
+            <p className="text-sm md:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
+              Masa pengiriman mantra dan artefak telah berakhir. Semua data saat ini sedang dalam proses evaluasi oleh Tim ISFEST. Silakan pantau Papan Peringkat untuk melihat posisi akhir.
+            </p>
+            
+            {/* Tampilkan link yang sudah disetor agar peserta merasa aman */}
+            {initialDriveLink && (
+              <div className="mt-8 p-4 bg-[#131b2c]/80 rounded-xl border border-slate-600/40 inline-block w-full max-w-lg text-left">
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                  Tautan Artefak Terakhir Anda:
+                </p>
+                <a 
+                  href={initialDriveLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-sm text-emerald-400 hover:text-emerald-300 hover:underline break-all transition-colors"
+                >
+                  {initialDriveLink}
+                </a>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* 3. Panel Unggah CSV (Hanya muncul jika gerbang terbuka) */}
+            <CsvUploader 
+              teamId={teamId} 
+              quotaRemaining={quotaRemaining} 
+              onUploadSuccess={handleUploadSuccess} 
+            />
 
-        {/* 4. Panel Tautan Drive */}
-        <DriveLinkPanel 
-          teamId={teamId} 
-          initialLink={initialDriveLink} 
-        />
+            {/* 4. Panel Tautan Drive (Hanya muncul jika gerbang terbuka) */}
+            <DriveLinkPanel 
+              teamId={teamId} 
+              initialLink={initialDriveLink} 
+            />
+          </>
+        )}
 
       </div>
     </main>
