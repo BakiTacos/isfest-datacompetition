@@ -79,8 +79,34 @@ export default function LoginPage() {
           <div className="bg-[#172135]/60 rounded-3xl shadow-2xl shadow-black/60 overflow-hidden border border-slate-600/40 backdrop-blur-xl p-8 md:p-10 transition-all duration-500">
             
             <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-[#ffec1f]/10 border border-[#ffec1f]/30 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(255,236,31,0.15)]">
-                <span className="text-2xl">⚡</span>
+              {/* Container tetap sama, ditambahkan 'relative' untuk konteks Image dan class animasi */}
+              <div className="w-16 h-16 bg-[#ffec1f]/10 border border-[#ffec1f]/30 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(255,236,31,0.15)] relative overflow-hidden animate-magic-float p-2">
+                <Image
+                  src="/mascot-wand.png"
+                  alt="Tongkat Sihir Maskot"
+                  width={48} // Ukuran sedikit lebih kecil dari container (w-16 = 64px) untuk padding
+                  height={48}
+                  priority // Prioritaskan pemuatan karena ini elemen visual utama
+                  className="object-contain drop-shadow-[0_0_10px_rgba(255,236,31,0.5)]" // Efek pendaran cahaya kuning pada gambar
+                />
+
+                {/* Sisipkan CSS Keyframes di dalam file global CSS atau style tag */}
+                <style jsx global>{`
+                  @keyframes magicFloat {
+                    0% {
+                      transform: translateY(0px) rotate(0deg);
+                    }
+                    50% {
+                      transform: translateY(-5px) rotate(3deg); /* Naik sedikit dan miring sedikit */
+                    }
+                    100% {
+                      transform: translateY(0px) rotate(0deg);
+                    }
+                  }
+                  .animate-magic-float {
+                    animation: magicFloat 3s ease-in-out infinite;
+                  }
+                `}</style>
               </div>
               <h1 className={`${cinzel.className} text-2xl md:text-3xl font-bold text-[#ffec1f] tracking-wider mb-2`}>
                 Masuk ke Arena

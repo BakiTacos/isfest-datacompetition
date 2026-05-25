@@ -15,7 +15,7 @@ export default function DatasetCard({ title, icon, desc, link, colorTheme }: any
   return (
     <div className={`bg-[#131b2c]/80 border border-slate-600/40 rounded-2xl p-6 flex flex-col items-center text-center transition-all group ${themeStyles[colorTheme]}`}>
       <div className="relative w-20 h-20 mb-4 transition-transform group-hover:scale-110">
-        <Image src={icon} alt={title} fill className="object-contain drop-shadow-lg" />
+        <Image src={icon} alt={title} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-contain drop-shadow-lg" />
       </div>
       <h3 className="font-bold text-slate-200 text-lg mb-2">{title}</h3>
       <p className="text-slate-400 text-xs mb-6 flex-grow">{desc}</p>

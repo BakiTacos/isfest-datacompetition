@@ -81,11 +81,15 @@ export default function DriveLinkPanel({ teamId, initialLink }: DriveLinkPanelPr
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center border border-blue-500/30 text-blue-400">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-            </div>
+            <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                <Image 
+                  src="/assets/quill-red.png" 
+                  alt="Ikon Bulu Ayam Merah" 
+                  width={32} // Sesuaikan dengan w-8 (8 * 4px = 32px)
+                  height={32} 
+                  className="object-contain drop-shadow-[0_0_5px_rgba(239,68,68,0.3)]" // Opsional: Beri sedikit efek pendaran merah
+                />
+              </div>
             <h2 className="text-xl font-bold text-white tracking-wide">Tautan Artefak (Google Drive)</h2>
           </div>
           

@@ -35,6 +35,7 @@ export default function MascotSide() {
           src="/mascot-side.png"
           alt="ISFEST Mascot"
           fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           priority // Tambahkan priority agar gambar tidak lambat muncul
           className="object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.6)]"
         />

@@ -8,7 +8,7 @@ export default function HandbookCard({ title, desc, link, icon }: { title: strin
     <div className="w-full bg-[#172135]/60 rounded-3xl shadow-2xl shadow-black/50 overflow-hidden border border-slate-600/30 backdrop-blur-xl p-6 md:p-10">
       <div className="flex flex-col md:flex-row items-center gap-8">
         <div className="w-28 h-28 shrink-0 bg-slate-800/50 rounded-2xl border border-slate-600/50 flex items-center justify-center relative shadow-inner p-4">
-          <Image src={icon} alt="Kitab Panduan" fill className="object-contain p-4 drop-shadow-lg" />
+          <Image src={icon} alt="Kitab Panduan" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-contain p-4 drop-shadow-lg" />
         </div>
         <div className="flex-1 text-center md:text-left">
           <h1 className={`${cinzel.className} text-2xl font-bold text-white tracking-wider mb-2`}>{title}</h1>

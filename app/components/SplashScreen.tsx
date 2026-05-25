@@ -60,6 +60,7 @@ export default function SplashScreen() {
               src="/assets/book-open.png"
               alt="Magic Book"
               fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               priority
               className="object-contain"
             />
@@ -77,6 +78,7 @@ export default function SplashScreen() {
               src="/assets/quill-red.png"
               alt="Magic Quill"
               fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               priority
               className="object-contain drop-shadow-[5px_10px_5px_rgba(0,0,0,0.5)]"
             />
