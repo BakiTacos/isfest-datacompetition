@@ -27,11 +27,14 @@ export const viewport: Viewport = {
 
 // Konfigurasi SEO dan Metadata Lengkap
 export const metadata: Metadata = {
-  title: "ISFEST 2026 | Grand Arena of Data Sorcery",
-  description: "Platform resmi kompetisi sains data ISFEST 2026 oleh Universitas Multimedia Nusantara. Uji kemampuan asrama Anda dalam meracik algoritma prediksi terbaik.",
+  title: "ISFEST 2026 | Unleash Your Magic Forge The Future",
+  description: "Platform kompetisi resmi ISFEST 2026 oleh Universitas Multimedia Nusantara. Uji kemampuan asrama Anda dalam meracik algoritma prediksi terbaik.",
   keywords: [
     "ISFEST 2026", 
     "Data Competition", 
+    "UI/UX",
+    "Information System",
+    "Information System Festival",
     "Universitas Multimedia Nusantara", 
     "UMN", 
     "Data Science", 
@@ -41,16 +44,16 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Panitia ISFEST UMN 2026" }],
   openGraph: {
-    title: "ISFEST 2026 | Grand Arena of Data Sorcery",
-    description: "Platform kompetisi sains data resmi ISFEST 2026 oleh Universitas Multimedia Nusantara.",
+    title: "ISFEST 2026 | Unleash Your Magic Forge The Future",
+    description: "Platform kompetisi resmi ISFEST 2026 oleh Universitas Multimedia Nusantara.",
     url: "https://isfest.umn.ac.id", // Ganti dengan domain asli Anda jika sudah ada
-    siteName: "ISFEST 2026 Data Competition",
+    siteName: "UMN Information System Festival 2026",
     images: [
       {
-        url: "/assets/book-open.png", // Akan muncul sebagai gambar pratinjau saat link dibagikan
+        url: "/logo-isfest.png", // Akan muncul sebagai gambar pratinjau saat link dibagikan
         width: 800,
         height: 600,
-        alt: "ISFEST 2026 Data Competition",
+        alt: "UMN Information System Festival 2026",
       },
     ],
     locale: "id_ID",
@@ -58,9 +61,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ISFEST 2026 | Grand Arena of Data Sorcery",
-    description: "Platform resmi kompetisi sains data ISFEST 2026 oleh Universitas Multimedia Nusantara.",
-    images: ["/assets/book-open.png"], 
+    title: "ISFEST 2026 | Unleash Your Magic Forge The Future",
+    description: "Platform resmi kompetisi ISFEST 2026 oleh Universitas Multimedia Nusantara.",
+    images: ["/logo-isfest.png"], 
   },
 };
 
