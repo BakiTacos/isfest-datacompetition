@@ -24,17 +24,14 @@ export async function POST(request: Request) {
       .single();
 
     // 🔍 DEBUG SERVER (Cek terminal VS Code Anda jika login gagal)
-    console.log("=== ANALISIS GERBANG LOGIN ===");
-    console.log("Input Username :", cleanUsername);
-    console.log("Team Terdeteksi:", !!teamData);
+    
     if (teamData) {
-      console.log("Hash dari DB   :", teamData.password);
-      console.log("Panjang Hash   :", teamData.password.length); // WAJIB BERJUMLAH 60 KARAKTER
+
     }
     if (fetchError) {
-      console.log("Database Error :", fetchError.message);
+     
     }
-    console.log("==============================");
+   
 
     // Jika tim tidak ditemukan di DB
     if (fetchError || !teamData) {
@@ -43,8 +40,6 @@ export async function POST(request: Request) {
 
     // 3. Bandingkan password murni dari input dengan hash murni dari database
     const isPasswordMatch = await bcrypt.compare(cleanPassword, teamData.password);
-
-    console.log("🔐 STATUS MATCH BCRYPT:", isPasswordMatch);
 
     if (!isPasswordMatch) {
       return NextResponse.json({ error: 'Kata sandi asrama Anda salah.' }, { status: 401 });

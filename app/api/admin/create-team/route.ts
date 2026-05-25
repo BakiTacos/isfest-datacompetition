@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid request format.' }, { status: 400 });
     }
 
-    const { teamName, username, password } = body;
+    const { teamName, username, password, jenisLomba } = body;
     
     if (!teamName || !username || !password) {
       return NextResponse.json({ error: 'Data tidak lengkap.' }, { status: 400 });
@@ -48,7 +48,8 @@ export async function POST(request: Request) {
           team_name: cleanTeamName,
           username: cleanUsername,
           password: hashedTeamPassword,
-          submission_count: 0
+          submission_count: 0,
+          jenis_lomba: jenisLomba
         }
       ]);
 

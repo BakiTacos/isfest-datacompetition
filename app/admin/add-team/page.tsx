@@ -11,6 +11,7 @@ export default function AddTeamPage() {
   const router = useRouter();
   const [teamName, setTeamName] = useState('');
   const [password, setPassword] = useState('');
+  const [jenisLomba, setJenisLomba] = useState('Data Competition'); // State baru untuk Jenis Lomba
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -43,21 +44,20 @@ export default function AddTeamPage() {
       const response = await fetch('/api/admin/create-team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Kirim username yang sudah digenerate ke backend
-        body: JSON.stringify({ teamName, username: generatedUsername, password }),
+        // Sisipkan jenisLomba ke dalam pengiriman data
+        body: JSON.stringify({ teamName, username: generatedUsername, password, jenisLomba }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Jangan tampilkan data.error jika isinya pesan sistem database yang sensitif
-        // Tampilkan pesan umum yang aman
-        throw new Error(data.error || 'Terjadi kesalahan sistem.');
+        throw new Error(data.error || 'Terjadi kesalahan sistem saat meracik identitas.');
       }
 
       setStatus({ type: 'success', text: data.message });
       setTeamName('');
       setPassword('');
+      setJenisLomba('Data Competition'); // Kembalikan ke default
 
       setTimeout(() => setStatus(null), 5000);
     } catch (err: any) {
@@ -90,6 +90,29 @@ export default function AddTeamPage() {
         </div>
 
         <form onSubmit={handleCreateTeam} className="space-y-4">
+          
+          {/* BIDANG LOMBA */}
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Bidang Lomba</label>
+            <div className="relative">
+              <select
+                value={jenisLomba}
+                onChange={(e) => setJenisLomba(e.target.value)}
+                className="w-full bg-[#0a101d]/60 border border-slate-600/40 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#ffec1f]/60 transition-colors appearance-none cursor-pointer"
+              >
+                <option value="Data Competition" className="bg-[#172135]">Data Competition</option>
+                <option value="UI/UX" className="bg-[#172135]">UI/UX</option>
+              </select>
+              {/* Custom Arrow Icon untuk mempercantik select */}
+              <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* NAMA TIM */}
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Nama Tim</label>
             <input
@@ -112,6 +135,7 @@ export default function AddTeamPage() {
             </div>
           )}
 
+          {/* PASSWORD AWAL */}
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Password Awal</label>
             <input
@@ -138,7 +162,7 @@ export default function AddTeamPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-slate-950 font-bold text-xs uppercase tracking-widest py-3.5 rounded-xl shadow-lg shadow-amber-900/30 transition-all transform hover:-translate-y-0.5 disabled:opacity-40 disabled:transform-none"
+            className="w-full bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-slate-950 font-bold text-xs uppercase tracking-widest py-3.5 rounded-xl shadow-lg shadow-amber-900/30 transition-all transform hover:-translate-y-0.5 disabled:opacity-40 disabled:transform-none mt-2"
           >
             {isLoading ? 'Mendaftarkan...' : 'Daftarkan Akun Tim'}
           </button>
