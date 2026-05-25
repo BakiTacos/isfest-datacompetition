@@ -21,11 +21,25 @@ interface LeaderboardTableProps {
 export default function LeaderboardTable({ data, isDeadlineClosed }: LeaderboardTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const sortedData = [...data].sort((a, b) => {
+    if (isDeadlineClosed) {
+      // Jika gerbang terkunci: Urutkan berdasarkan Poin Terbesar (Descending)
+      const pointA = a.final_points ?? 0;
+      const pointB = b.final_points ?? 0;
+      return pointB - pointA;
+    } else {
+      // Jika gerbang terbuka: Urutkan berdasarkan RMSE Terkecil (Ascending)
+      if (a.best_rmse === null) return 1;
+      if (b.best_rmse === null) return -1;
+      return a.best_rmse - b.best_rmse;
+    }
+  });
   
-  const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentData = data.slice(startIndex, endIndex);
+  const currentData = sortedData.slice(startIndex, endIndex);
   
 
   // Komponen kecil untuk Badge Status File
@@ -47,7 +61,7 @@ export default function LeaderboardTable({ data, isDeadlineClosed }: Leaderboard
       <div className="px-5 py-5 md:px-8 md:py-6 border-b border-slate-600/30 flex items-center justify-between bg-[#131b2c]/50">
         <div className="flex items-center gap-3">
           <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
-            {isDeadlineClosed ? 'Klasemen Akhir' : 'Leaderboard'}
+            {isDeadlineClosed ? 'Papan Peringkat' : 'Leaderboard'}
           </h2>
         </div>
       </div>

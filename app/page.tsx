@@ -30,7 +30,8 @@ async function getLeaderboardData(): Promise<TeamLeaderboard[]> {
       .from('teams')
       // Tambahkan kolom berkas dan poin akhir di sini
       .select('id, team_name, best_rmse, has_ipynb, has_ppt, has_laporan, final_score') 
-      .order('best_rmse', { ascending: true, nullsFirst: false });
+      .order('best_rmse', { ascending: true, nullsFirst: false })
+      .order('updated_at', { ascending: true });
 
     if (error) {
       console.error('🚨 Supabase DB Error:', error.message);
