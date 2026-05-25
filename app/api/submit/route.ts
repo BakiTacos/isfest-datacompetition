@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
     const { data: teamData, error: fetchError } = await supabaseAdmin
       .from('teams')
-      .select('submission_count, last_submit_date, final_link') 
+      .select('submission_count, last_submit_date, final_link, team_name, best_rmse',) 
       .eq('id', teamId)
       .single();
 
@@ -54,6 +54,9 @@ export async function GET(request: Request) {
 // ==========================================
 // POST: Evaluasi Prediksi (Baca Storage -> Kalkulasi RMSE)
 // ==========================================
+// ==========================================
+// POST: Evaluasi Prediksi (Baca Storage -> Kalkulasi RMSE)
+// ==========================================
 export async function POST(request: Request) {
   try {
     // 1. TERIMA JSON DARI FRONTEND
@@ -68,7 +71,7 @@ export async function POST(request: Request) {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
     const { data: teamData, error: fetchError } = await supabaseAdmin
       .from('teams')
-      .select('best_rmse, submission_count, last_submit_date')
+      .select('team_name, best_rmse, submission_count, last_submit_date') // ✅ team_name DITAMBAHKAN DI SINI
       .eq('id', teamId)
       .single();
 
@@ -79,7 +82,6 @@ export async function POST(request: Request) {
     if (currentCount >= DAILY_QUOTA) return NextResponse.json({ error: 'Energi sihir harian Anda telah habis.' }, { status: 429 });
 
     // 3. UNDUH FILE SUBMISI DARI STORAGE
-    // supabaseAdmin akan menembus batas Private Bucket
     const { data: fileData, error: downloadError } = await supabaseAdmin
       .storage
       .from('submissions')
@@ -190,30 +192,103 @@ export async function POST(request: Request) {
     const { error: updateError } = await supabaseAdmin.from('teams').update(updatePayload).eq('id', teamId);
     if (updateError) return NextResponse.json({ error: 'Gagal memahat rekor asrama ke dalam pilar batu.' }, { status: 500 });
 
-    try {
-      if (isNewBest) {
-        // Jika ini rekor baru, cari semua file lama di folder tim dan hapus
+    if (isNewBest) {
+      // ==========================================
+      // 9A. LOGIKA PEMBERSIHAN STORAGE (HIGHLANDER)
+      // ==========================================
+      try {
         const { data: existingFiles } = await supabaseAdmin.storage.from('submissions').list(teamId);
         
         if (existingFiles && existingFiles.length > 0) {
-          const currentFileName = filePath.split('/').pop(); // Ambil nama file saja
+          const currentFileName = filePath.split('/').pop(); 
           
-          // Filter file yang BUKAN file yang baru saja diunggah ini
           const filesToDelete = existingFiles
             .filter(f => f.name !== currentFileName) 
-            .map(f => `${teamId}/${f.name}`); // Format path untuk dihapus
+            .map(f => `${teamId}/${f.name}`); 
             
           if (filesToDelete.length > 0) {
             await supabaseAdmin.storage.from('submissions').remove(filesToDelete);
           }
         }
-      } else {
-        // Jika BUKAN rekor baru, skor tetap dicatat di atas, tapi filenya LANGSUNG DIHAPUS
-        await supabaseAdmin.storage.from('submissions').remove([filePath]);
+      } catch (cleanupError) {
+        console.error("Gagal membersihkan ruang penyimpanan:", cleanupError);
       }
-    } catch (cleanupError) {
-      // Kita log saja, jangan gagalkan response karena skor sudah berhasil dicatat
-      console.error("Gagal membersihkan ruang penyimpanan:", cleanupError);
+
+      // ==========================================
+      // 9B. LOGIKA PENCATATAN AKTIVITAS (LIVE LOG)
+      // ==========================================
+      try {
+        // 1. Cari tahu ranking tim ini sekarang (Hitung jumlah tim yang RMSE-nya lebih kecil/lebih baik)
+        const { count: rankCount } = await supabaseAdmin
+          .from('teams')
+          .select('id', { count: 'exact', head: true })
+          .lt('best_rmse', rmse)
+          .not('best_rmse', 'is', null);
+
+        const newRank = (rankCount || 0) + 1; // Jika ada 2 tim yang lebih baik, berarti dia rank 3
+        const teamName = teamData.team_name;
+        const formattedRmse = rmse.toFixed(5);
+        
+        let logMessage = "";
+        let logType = 'update';
+
+        // Fungsi pembantu untuk memilih teks acak dari sebuah array
+        const getRandomMsg = (messages: string[]) => messages[Math.floor(Math.random() * messages.length)];
+
+        // KONDISI 1: Submisi Pertama Kali
+        if (teamData.best_rmse === null) {
+          logType = 'rank_up';
+          logMessage = getRandomMsg([
+            `👑 **${teamName}** berhasil menancapkan bendera pertama kali di papan peringkat dengan RMSE **${formattedRmse}**!`,
+            `📜 Gulungan mantra **${teamName}** akhirnya terbuka! Skor perdana mereka: **${formattedRmse}**!`,
+            `✨ Pendatang baru di arena! **${teamName}** memulai debutnya dengan akurasi **${formattedRmse}**.`
+          ]);
+        } 
+        // KONDISI 2: Berhasil Menyalip ke Top 3!
+        else if (newRank <= 3) { 
+          logType = 'rank_up';
+          logMessage = getRandomMsg([
+            `🔥 GOKILLL! **${teamName}** mendobrak masuk ke posisi **#${newRank}**! Papan peringkat berguncang keras! 💥`,
+            `⚡ SENSASIONAL! Dengan RMSE **${formattedRmse}**, **${teamName}** merebut takhta posisi **#${newRank}**!`,
+            `🏆 **${teamName}** menembakkan sihir mematikan! Posisi **#${newRank}** kini dalam genggaman mereka!`,
+            `🚨 ALERT! **${teamName}** baru saja membajak peringkat **#${newRank}** dengan akurasi dewa!`
+          ]);
+        } 
+        // KONDISI 3 & 4: Peningkatan Berdasarkan Selisih Skor
+        else {
+          const improvement = teamData.best_rmse - rmse;
+          
+          if (improvement > 0.05) { // Angka 0.05 bisa disesuaikan dengan skala dataset Anda
+            // Peningkatan drastis (Lompatan jauh)
+            logType = 'rank_up';
+            logMessage = getRandomMsg([
+              `🚀 LOMPATAN JAUH! **${teamName}** mempertajam akurasi secara drastis menjadi **${formattedRmse}**!`,
+              `☄️ **${teamName}** menemukan formula rahasia! Skor mereka melesat tajam ke **${formattedRmse}**!`,
+              `⚔️ Serangan balik mematikan dari **${teamName}**! Rekor lama mereka hancur berkeping-keping.`
+            ]);
+          } else {
+            // Peningkatan minor (Optimasi perlahan / fine-tuning)
+            logType = 'update';
+            logMessage = getRandomMsg([
+              `🔮 Sedikit demi sedikit! **${teamName}** mengasah mantra mereka menjadi **${formattedRmse}**!`,
+              `🛠️ **${teamName}** melakukan *fine-tuning* dan berhasil mengamankan RMSE **${formattedRmse}**.`,
+              `🧩 Akurasi meningkat! **${teamName}** terus bereksperimen dengan skor baru **${formattedRmse}**.`,
+              `⚡ Evaluasi sukses. Mantra **${teamName}** kini sedikit lebih tajam di angka **${formattedRmse}**.`
+            ]);
+          }
+        }
+
+        // Simpan log yang sudah dirangkai ke database
+        const { error: insertError } = await supabaseAdmin.from('activity_logs').insert({
+          message: logMessage,
+          type: logType
+        });
+        
+        if (insertError) console.error("🚨 Gagal Insert Log:", insertError.message);
+
+      } catch (logError) {
+        console.error("Gagal mencatat log aktivitas:", logError);
+      }
     }
 
     return NextResponse.json({
