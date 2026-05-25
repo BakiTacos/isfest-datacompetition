@@ -231,12 +231,12 @@ export default function AdminCheckPage() {
                       <td className="py-4 px-6 font-semibold text-slate-100">{team.team_name}</td>
                       <td className="py-4 px-6">
                         <div className="flex justify-center">
-                          <FileToggleButton team={team} field="has_ipynb" label="Code" />
+                          <FileToggleButton team={team} field="has_ipynb" label="ipynb" />
                         </div>
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex justify-center">
-                          <FileToggleButton team={team} field="has_laporan" label="Doc" />
+                          <FileToggleButton team={team} field="has_laporan" label="Laporan" />
                         </div>
                       </td>
                       <td className="py-4 px-6">

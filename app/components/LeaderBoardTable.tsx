@@ -100,8 +100,8 @@ export default function LeaderboardTable({ data, isDeadlineClosed }: Leaderboard
                         </span>
                         {/* Area Indikator Status File */}
                         <div className="flex items-center gap-1.5 md:gap-2">
-                          <StatusBadge isUploaded={team.has_ipynb} label="Code" />
-                          <StatusBadge isUploaded={team.has_laporan} label="Doc" />
+                          <StatusBadge isUploaded={team.has_ipynb} label="ipynb" />
+                          <StatusBadge isUploaded={team.has_laporan} label="Laporan" />
                           <StatusBadge isUploaded={team.has_ppt} label="PPT" />
                         </div>
                       </div>
