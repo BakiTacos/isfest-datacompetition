@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isMaintenance = false; // Set ke FALSE jika ingin website normal kembali
@@ -27,7 +27,7 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Konfigurasi agar middleware hanya berjalan di path tertentu
+// Konfigurasi agar proxy hanya berjalan di path tertentu
 export const config = {
   matcher: ['/admin/:path*'],
 };

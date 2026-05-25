@@ -17,6 +17,7 @@ export default function Navbar() {
               src="/logo-isfest.png"
               alt="ISFEST 2026 Logo"
               fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-contain object-left"
               priority
             />

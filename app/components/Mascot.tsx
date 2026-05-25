@@ -48,6 +48,7 @@ export default function Mascot() {
           src="/mascot-wand.png"
           alt="ISFEST 2026 Wizard Mascot"
           fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           priority
           className="object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.6)] transition-transform duration-300 group-hover:scale-[1.03]"
         />

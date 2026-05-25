@@ -27,6 +27,7 @@ export const viewport: Viewport = {
 
 // Konfigurasi SEO dan Metadata Lengkap
 export const metadata: Metadata = {
+  metadataBase: new URL('https://isfest-umn.com'),
   title: "ISFEST 2026 | Unleash Your Magic Forge The Future",
   description: "Platform kompetisi resmi ISFEST 2026 oleh Universitas Multimedia Nusantara. Uji kemampuan asrama Anda dalam meracik algoritma prediksi terbaik.",
   keywords: [

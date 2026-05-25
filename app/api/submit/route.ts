@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
     const { data: teamData, error: fetchError } = await supabaseAdmin
       .from('teams')
-      .select('submission_count, last_submit_date, final_link, team_name, best_rmse',) 
+      .select('submission_count, last_submit_date, final_link, team_name, best_rmse') 
       .eq('id', teamId)
       .single();
 
@@ -54,9 +54,6 @@ export async function GET(request: Request) {
 // ==========================================
 // POST: Evaluasi Prediksi (Baca Storage -> Kalkulasi RMSE)
 // ==========================================
-// ==========================================
-// POST: Evaluasi Prediksi (Baca Storage -> Kalkulasi RMSE)
-// ==========================================
 export async function POST(request: Request) {
   try {
     // 1. TERIMA JSON DARI FRONTEND
@@ -71,11 +68,16 @@ export async function POST(request: Request) {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
     const { data: teamData, error: fetchError } = await supabaseAdmin
       .from('teams')
-      .select('team_name, best_rmse, submission_count, last_submit_date') // ✅ team_name DITAMBAHKAN DI SINI
+      .select('team_name, best_rmse, submission_count, last_submit_date, jenis_lomba') // ✅ PASTIKAN MENGAMBIL jenis_lomba
       .eq('id', teamId)
       .single();
 
     if (fetchError || !teamData) return NextResponse.json({ error: 'Asrama tidak valid.' }, { status: 404 });
+    
+    // Proteksi Ekstra: Tolak jika UI/UX mencoba kirim CSV (meski secara UI sudah disembunyikan)
+    if (teamData.jenis_lomba === 'UI/UX') {
+      return NextResponse.json({ error: 'Sihir ini hanya untuk peserta Data Competition.' }, { status: 403 });
+    }
 
     let currentCount = teamData.submission_count || 0;
     if (teamData.last_submit_date !== today) currentCount = 0;
@@ -186,7 +188,14 @@ export async function POST(request: Request) {
 
     // 8. UPDATE REKOR PAPAN PERINGKAT
     const isNewBest = teamData.best_rmse === null || rmse < teamData.best_rmse;
-    const updatePayload: any = { submission_count: currentCount + 1, last_submit_date: today };
+    
+    // ✅ PENAMBAHAN: Sisipkan updated_at untuk aturan pemecah seri (Tie-breaker)
+    const updatePayload: any = { 
+      submission_count: currentCount + 1, 
+      last_submit_date: today,
+      updated_at: new Date()
+    };
+    
     if (isNewBest) updatePayload.best_rmse = rmse;
 
     const { error: updateError } = await supabaseAdmin.from('teams').update(updatePayload).eq('id', teamId);
@@ -218,14 +227,19 @@ export async function POST(request: Request) {
       // 9B. LOGIKA PENCATATAN AKTIVITAS (LIVE LOG)
       // ==========================================
       try {
-        // 1. Cari tahu ranking tim ini sekarang (Hitung jumlah tim yang RMSE-nya lebih kecil/lebih baik)
-        const { count: rankCount } = await supabaseAdmin
+        // 1. Cari tahu ranking tim ini dengan simulasi persis seperti Leaderboard
+        const { data: rankedTeams } = await supabaseAdmin
           .from('teams')
-          .select('id', { count: 'exact', head: true })
-          .lt('best_rmse', rmse)
-          .not('best_rmse', 'is', null);
+          .select('id')
+          .eq('jenis_lomba', 'Data Competition') // Hanya bandingkan dengan sesama Data Comp
+          .not('best_rmse', 'is', null)
+          .order('best_rmse', { ascending: true })
+          .order('updated_at', { ascending: true }); // TIE-BREAKER: Siapa cepat dia di atas!
 
-        const newRank = (rankCount || 0) + 1; // Jika ada 2 tim yang lebih baik, berarti dia rank 3
+        // 2. Temukan urutan (indeks) tim ini di dalam array yang sudah terurut
+        // Ingat: Array dimulai dari 0, jadi rank = index + 1
+        const newRank = rankedTeams ? rankedTeams.findIndex(t => t.id === teamId) + 1 : 1;
+        
         const teamName = teamData.team_name;
         const formattedRmse = rmse.toFixed(5);
         
@@ -244,7 +258,6 @@ export async function POST(request: Request) {
             `✨ Pendatang baru di arena! **${teamName}** memulai debutnya dengan akurasi **${formattedRmse}**.`
           ]);
         } 
-        // KONDISI 2: Berhasil Menyalip ke Top 3!
         else if (newRank <= 3) { 
           logType = 'rank_up';
           logMessage = getRandomMsg([
@@ -254,12 +267,10 @@ export async function POST(request: Request) {
             `🚨 ALERT! **${teamName}** baru saja membajak peringkat **#${newRank}** dengan akurasi dewa!`
           ]);
         } 
-        // KONDISI 3 & 4: Peningkatan Berdasarkan Selisih Skor
         else {
           const improvement = teamData.best_rmse - rmse;
           
-          if (improvement > 0.05) { // Angka 0.05 bisa disesuaikan dengan skala dataset Anda
-            // Peningkatan drastis (Lompatan jauh)
+          if (improvement > 0.05) { 
             logType = 'rank_up';
             logMessage = getRandomMsg([
               `🚀 LOMPATAN JAUH! **${teamName}** mempertajam akurasi secara drastis menjadi **${formattedRmse}**!`,
@@ -267,7 +278,6 @@ export async function POST(request: Request) {
               `⚔️ Serangan balik mematikan dari **${teamName}**! Rekor lama mereka hancur berkeping-keping.`
             ]);
           } else {
-            // Peningkatan minor (Optimasi perlahan / fine-tuning)
             logType = 'update';
             logMessage = getRandomMsg([
               `🔮 Sedikit demi sedikit! **${teamName}** mengasah mantra mereka menjadi **${formattedRmse}**!`,
@@ -278,7 +288,6 @@ export async function POST(request: Request) {
           }
         }
 
-        // Simpan log yang sudah dirangkai ke database
         const { error: insertError } = await supabaseAdmin.from('activity_logs').insert({
           message: logMessage,
           type: logType
