@@ -2,256 +2,151 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-
-interface TeamData {
-  id: string;
-  team_name: string;
-  has_ipynb: boolean;
-  has_ppt: boolean;
-  has_laporan: boolean;
-}
+import { TeamAdminData, GlobalConfig } from './types';
+import ControlPanel from './components/ControlPanel';
+import AdminTable from './components/AdminTable';
 
 export default function AdminCheckPage() {
-  // State untuk Deadline
-  const [isDeadlineClosed, setIsDeadlineClosed] = useState<boolean>(false);
+  const [config, setConfig] = useState<GlobalConfig>({ isDeadlineClosed: false, isOpen: false });
   const [isLoadingConfig, setIsLoadingConfig] = useState<boolean>(true);
-  const [configMessage, setConfigMessage] = useState<string>('');
-
-  // State untuk Daftar Tim
-  const [teams, setTeams] = useState<TeamData[]>([]);
-  const [isLoadingTeams, setIsLoadingTeams] = useState<boolean>(true);
   
-  // State untuk melacak baris yang sedang diproses (loading state per tombol)
-  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [teams, setTeams] = useState<TeamAdminData[]>([]);
+  const [isLoadingTeams, setIsLoadingTeams] = useState<boolean>(true);
 
+  // State Filter & Pencarian
+  const [activeTab, setActiveTab] = useState<'Data Competition' | 'UI/UX'>('Data Competition');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch Initial Data
   useEffect(() => {
-    // Ambil konfigurasi deadline
-    const fetchConfig = async () => {
+    const fetchConfigsAndTeams = async () => {
       try {
-        const res = await fetch('/api/config');
-        if (res.ok) {
-          const data = await res.json();
-          setIsDeadlineClosed(data.isDeadlineClosed);
-        }
+        const [configRes, teamsRes] = await Promise.all([
+          fetch('/api/config'), // Pastikan endpoint GET /api/config me-return { isDeadlineClosed, isOpen }
+          fetch('/api/admin/teams')
+        ]);
+        
+        if (configRes.ok) setConfig(await configRes.json());
+        if (teamsRes.ok) setTeams(await teamsRes.json());
       } catch (err) {
-        console.error('Gagal memuat konfigurasi:', err);
+        console.error('Gagal memuat data admin:', err);
       } finally {
         setIsLoadingConfig(false);
-      }
-    };
-
-    // Ambil data kelengkapan tim
-    const fetchTeams = async () => {
-      try {
-        const res = await fetch('/api/admin/teams');
-        if (res.ok) {
-          const data = await res.json();
-          setTeams(data);
-        }
-      } catch (err) {
-        console.error('Gagal memuat data tim:', err);
-      } finally {
         setIsLoadingTeams(false);
       }
     };
-
-    fetchConfig();
-    fetchTeams();
+    fetchConfigsAndTeams();
   }, []);
 
-  // Handler: Ubah Status Gerbang
-  const handleToggleDeadline = async (targetState: boolean) => {
+  // Handler: Update Global Config
+  const handleToggleConfig = async (key: 'is_deadline_closed' | 'is_open', targetState: boolean) => {
     setIsLoadingConfig(true);
-    setConfigMessage('');
     try {
       const res = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isDeadlineClosed: targetState }),
+        // Endpoint POST /api/config Anda harus mampu menerima dan memperbarui kedua kunci ini
+        body: JSON.stringify({ [key === 'is_deadline_closed' ? 'isDeadlineClosed' : 'isOpen']: targetState }),
       });
 
       if (res.ok) {
-        const data = await res.json();
-        setIsDeadlineClosed(data.isDeadlineClosed);
-        setConfigMessage(
-          targetState 
-            ? '🔒 Gerbang DIKUNCI! Poin klasemen akhir diaktifkan.' 
-            : '🔓 Gerbang DIBUKA! Peserta dapat melakukan submisi kembali.'
-        );
+        setConfig(prev => ({ 
+          ...prev, 
+          [key === 'is_deadline_closed' ? 'isDeadlineClosed' : 'isOpen']: targetState 
+        }));
       } else {
-        setConfigMessage('❌ Gagal mengubah status gerbang.');
+        alert(`Gagal memperbarui pengaturan ${key}.`);
       }
     } catch (err) {
-      setConfigMessage('❌ Terjadi kesalahan koneksi server.');
+      alert('Terjadi kesalahan jaringan.');
     } finally {
       setIsLoadingConfig(false);
     }
   };
 
-  // Handler: Ubah Status Berkas per Tim
-  const handleToggleFile = async (teamId: string, field: keyof TeamData, currentValue: boolean) => {
-    setProcessingId(`${teamId}-${field}`);
-    const newValue = !currentValue;
-
+  // Handler: Update Field Tim (Checkbox / Input Nilai)
+  const handleUpdateTeamField = async (teamId: string, field: string, value: any) => {
     try {
       const res = await fetch('/api/admin/teams', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teamId, field, value: newValue }),
+        body: JSON.stringify({ teamId, field, value }),
       });
 
       if (res.ok) {
-        // Perbarui UI lokal jika sukses di database
         setTeams(prevTeams => 
-          prevTeams.map(team => 
-            team.id === teamId ? { ...team, [field]: newValue } : team
-          )
+          prevTeams.map(team => team.id === teamId ? { ...team, [field]: value } : team)
         );
       } else {
-        alert('Gagal memperbarui status berkas.');
+        alert('Gagal memperbarui data tim.');
       }
     } catch (err) {
-      alert('Terjadi kesalahan jaringan.');
-    } finally {
-      setProcessingId(null);
+      alert('Terjadi kesalahan jaringan saat update data.');
     }
   };
 
-  // Komponen kecil untuk tombol toggle berkas
-  const FileToggleButton = ({ team, field, label }: { team: TeamData, field: 'has_ipynb' | 'has_ppt' | 'has_laporan', label: string }) => {
-    const isChecked = team[field];
-    const isProcessing = processingId === `${team.id}-${field}`;
-
-    return (
-      <button
-        onClick={() => handleToggleFile(team.id, field, isChecked)}
-        disabled={isProcessing}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all w-24 justify-center ${
-          isChecked
-            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)] hover:bg-emerald-500/30'
-            : 'bg-slate-800/50 text-slate-400 border-slate-600/40 hover:bg-slate-700/80 hover:text-white'
-        } disabled:opacity-50`}
-      >
-        {isProcessing ? (
-          <span className="animate-spin">⏳</span>
-        ) : (
-          <span>{isChecked ? '✅' : '−'} {label}</span>
-        )}
-      </button>
-    );
-  };
+  // Filter Logika
+  const filteredTeams = teams.filter(team => {
+    const matchLomba = (team.jenis_lomba || 'Data Competition') === activeTab;
+    const matchSearch = team.team_name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchLomba && matchSearch;
+  });
 
   return (
-    <main className="min-h-screen text-slate-200 font-sans relative flex flex-col items-center p-4 md:p-8">
-      {/* Background Maskot/Cyber Theme */}
+    <main className="min-h-screen text-slate-200 font-sans relative flex flex-col items-center p-4 md:p-8 selection:bg-[#ffec1f]/20 selection:text-[#ffec1f]">
       <div className="fixed inset-0 z-0 pointer-events-none">
         <Image src="/background-leaderboard.png" alt="Background" fill priority className="object-cover object-center" />
         <div className="absolute inset-0 bg-[#0a101d]/85 backdrop-blur-[4px]" />
       </div>
 
-      <div className="relative z-10 w-full max-w-5xl flex flex-col gap-8 items-center mt-4">
+      <div className="relative z-10 w-full max-w-6xl flex flex-col gap-6 md:gap-8 items-center">
         
-        {/* =========================================
-            PANEL 1: KENDALI WAKTU (DEADLINE)
-        ========================================= */}
-        <div className="w-full max-w-md bg-[#172135]/60 border border-slate-600/40 rounded-2xl p-6 shadow-2xl backdrop-blur-md">
-          <div className="flex flex-col items-center text-center gap-2 mb-6">
-            <div className="w-14 h-14 bg-[#ffec1f]/10 border border-[#ffec1f]/30 rounded-xl flex items-center justify-center text-xl text-[#ffec1f]">
-              🔮
+        {/* PANEL 1: KENDALI SISTEM */}
+        <ControlPanel config={config} isLoading={isLoadingConfig} onToggleConfig={handleToggleConfig} />
+
+        {/* PANEL 2: TABEL MANAJEMEN TIM */}
+        <div className="w-full bg-[#172135]/60 border border-slate-600/40 rounded-2xl shadow-2xl backdrop-blur-md flex flex-col overflow-hidden">
+          
+          {/* Header Tabel & Filter */}
+          <div className="px-5 py-4 md:px-6 border-b border-slate-600/30 bg-[#131b2c]/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            
+            {/* Tabs Filter Jenis Lomba */}
+            <div className="flex bg-[#0a101d]/80 p-1 rounded-xl border border-slate-700/50 w-full md:w-auto">
+              <button 
+                onClick={() => setActiveTab('Data Competition')}
+                className={`flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'Data Competition' ? 'bg-[#172135] text-emerald-400 border border-slate-600/50' : 'text-slate-500'}`}
+              >Data Competition</button>
+              <button 
+                onClick={() => setActiveTab('UI/UX')}
+                className={`flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'UI/UX' ? 'bg-[#172135] text-blue-400 border border-slate-600/50' : 'text-slate-500'}`}
+              >UI/UX</button>
             </div>
-            <h1 className="text-xl font-bold text-white tracking-wide">Pusat Kendali Waktu</h1>
+
+            {/* Pencarian Tim */}
+            <div className="relative w-full md:w-64">
+              <input
+                type="text"
+                placeholder="Cari asrama..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[#0a101d]/80 border border-slate-600/50 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-[#ffec1f]/50 transition-all"
+              />
+              <span className="absolute left-3 top-2 text-slate-500">🔍</span>
+            </div>
           </div>
 
-          <div className="bg-[#131b2c]/80 rounded-xl p-4 border border-slate-600/20 flex flex-col items-center gap-4">
-            <div className="flex items-center justify-between w-full border-b border-slate-600/20 pb-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Status Gerbang</span>
-              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide border ${
-                isDeadlineClosed ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-              }`}>
-                {isDeadlineClosed ? 'TERKUNCI (CLOSED)' : 'TERBUKA (LIVE)'}
-              </span>
-            </div>
+          {/* Render Tabel Dinamis */}
+          {isLoadingTeams ? (
+            <div className="py-16 text-center text-slate-400 animate-pulse text-sm">Menyinkronkan data dari aula besar...</div>
+          ) : (
+            <AdminTable 
+              teams={filteredTeams} 
+              jenisLomba={activeTab} 
+              onUpdateField={handleUpdateTeamField} 
+            />
+          )}
 
-            <div className="w-full grid grid-cols-2 gap-3 mt-1">
-              <button
-                onClick={() => handleToggleDeadline(false)}
-                disabled={isLoadingConfig || !isDeadlineClosed}
-                className={`py-2 rounded-xl font-bold text-[11px] border tracking-wide transition-all ${
-                  !isDeadlineClosed ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/40' : 'bg-[#172135] text-slate-400 border-slate-600/40 hover:bg-slate-700/50 hover:text-white'
-                } disabled:opacity-40`}
-              >
-                BUKA PORTAL
-              </button>
-              <button
-                onClick={() => handleToggleDeadline(true)}
-                disabled={isLoadingConfig || isDeadlineClosed}
-                className={`py-2 rounded-xl font-bold text-[11px] border tracking-wide transition-all ${
-                  isDeadlineClosed ? 'bg-red-600/20 text-red-400 border-red-500/40' : 'bg-[#172135] text-slate-400 border-slate-600/40 hover:bg-red-950/30 hover:text-red-400'
-                } disabled:opacity-40`}
-              >
-                KUNCI DEADLINE
-              </button>
-            </div>
-          </div>
-          {configMessage && <div className="mt-4 p-3 rounded-xl bg-slate-900/40 border border-slate-700/30 text-[11px] font-medium text-center text-slate-300">{configMessage}</div>}
         </div>
-
-
-        {/* =========================================
-            PANEL 2: VERIFIKASI ARTEFAK PESERTA
-        ========================================= */}
-        <div className="w-full bg-[#172135]/60 border border-slate-600/40 rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden flex flex-col">
-          <div className="px-6 py-5 border-b border-slate-600/30 bg-[#131b2c]/50 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
-              <span>📜</span> Verifikasi Artefak Final
-            </h2>
-            <span className="text-xs text-slate-400 font-medium bg-slate-800/50 px-3 py-1 rounded-full border border-slate-600/30">
-              Total: {teams.length} Tim
-            </span>
-          </div>
-
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse min-w-[600px]">
-              <thead className="bg-[#172135]/30 text-slate-300 text-[11px] font-semibold uppercase tracking-wider">
-                <tr className="border-b border-slate-600/30">
-                  <th className="py-4 px-6 w-1/3">Nama Kelompok</th>
-                  <th className="py-4 px-6 text-center">Source Code (.ipynb)</th>
-                  <th className="py-4 px-6 text-center">Laporan (.pdf)</th>
-                  <th className="py-4 px-6 text-center">Pitch Deck (.ppt)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-600/20 text-sm">
-                {isLoadingTeams ? (
-                  <tr><td colSpan={4} className="py-12 text-center text-slate-400 animate-pulse">Memuat mantra asrama...</td></tr>
-                ) : teams.length === 0 ? (
-                  <tr><td colSpan={4} className="py-12 text-center text-slate-400 italic">Belum ada tim yang terdaftar.</td></tr>
-                ) : (
-                  teams.map((team) => (
-                    <tr key={team.id} className="hover:bg-[#25344f]/30 transition-colors">
-                      <td className="py-4 px-6 font-semibold text-slate-100">{team.team_name}</td>
-                      <td className="py-4 px-6">
-                        <div className="flex justify-center">
-                          <FileToggleButton team={team} field="has_ipynb" label="ipynb" />
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex justify-center">
-                          <FileToggleButton team={team} field="has_laporan" label="Laporan" />
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex justify-center">
-                          <FileToggleButton team={team} field="has_ppt" label="PPT" />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </div>
     </main>
   );
