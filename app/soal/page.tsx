@@ -112,7 +112,7 @@ export default function SoalPage() {
         {!isLoggedIn && (
           <div className="w-full flex flex-col gap-8 animate-fade-in mb-8">
             <div className="text-center mb-4">
-              <h1 className={`${cinzel.className} text-3xl font-bold text-white mb-2`}>Arsip Publik ISFEST</h1>
+              <h1 className={`${cinzel.className} text-3xl font-bold text-white mb-2`}>Perpustakaan ISFEST</h1>
               <p className="text-slate-400 text-sm">Silakan baca panduan perlombaan. Untuk mengakses soal dan dataset, asrama Anda harus melakukan login terlebih dahulu.</p>
             </div>
 

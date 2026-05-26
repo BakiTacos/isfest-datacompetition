@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-// StatusBadge untuk visualisasi "Kelengkapan File" di awal
+// StatusBadge untuk visualisasi "Kelengkapan File"
 export const StatusBadge = ({ isUploaded, label }: { isUploaded: boolean, label: string }) => (
   <div className={`flex items-center gap-1 text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
     isUploaded 
@@ -19,10 +19,8 @@ export default function TableDataComp({ data, isDeadlineClosed }: any) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // ==========================================
-  // 1. HITUNG POIN PERINGKAT (Berdasarkan RMSE Murni)
-  // ==========================================
-  const dataWithTrueRank = [...data]
+  // 1. Kalkulasi Poin Peringkat & Total Poin Dinamis secara Real-time
+  const dataWithCalculatedPoints = [...data]
     .sort((a, b) => {
       if (a.best_rmse === null) return 1;
       if (b.best_rmse === null) return -1;
@@ -42,16 +40,43 @@ export default function TableDataComp({ data, isDeadlineClosed }: any) {
       else if (rmseRank >= 11 && rmseRank <= 20) poinPeringkat = 15;
       else poinPeringkat = 10;
 
-      return { ...team, poinPeringkat }; 
+      // KALKULASI BERKAS
+      const poinIpynb = team.has_ipynb ? 5 : 0;
+      const poinLaporan = team.has_laporan ? 5 : 0;
+      const poinPpt = team.has_ppt ? 5 : 0;
+      const totalPoinBerkas = poinIpynb + poinLaporan + poinPpt;
+
+      // KALKULASI PANITIA
+      const scoreIpynb = Number(team.score_ipynb || 0);
+      const scoreLaporan = Number(team.score_laporan || 0);
+      const scorePpt = Number(team.score_ppt || 0);
+      const poinPanitia = scoreIpynb + scoreLaporan + scorePpt;
+
+      // TOTAL POIN AKHIR (Hanya dihitung jika RMSE tidak null)
+      const calculated_final_points = team.best_rmse !== null 
+        ? (poinPeringkat + totalPoinBerkas + poinPanitia) 
+        : null;
+
+      return { 
+        ...team, 
+        poinPeringkat,
+        poinIpynb,
+        poinLaporan,
+        poinPpt,
+        totalPoinBerkas,
+        scoreIpynb,
+        scoreLaporan,
+        scorePpt,
+        poinPanitia,
+        calculated_final_points
+      }; 
     });
 
-  // ==========================================
-  // 2. URUTAN TAMPILAN TABEL (Berdasarkan Poin Akhir)
-  // ==========================================
-  const sortedData = [...dataWithTrueRank].sort((a, b) => {
+  // 2. Sorting berdasarkan Total Poin yang baru dihitung
+  const sortedData = [...dataWithCalculatedPoints].sort((a, b) => {
     if (isDeadlineClosed) {
-      const pointA = a.final_points ?? 0;
-      const pointB = b.final_points ?? 0;
+      const pointA = a.calculated_final_points ?? 0;
+      const pointB = b.calculated_final_points ?? 0;
       return pointB - pointA;
     } else {
       if (a.best_rmse === null) return 1;
@@ -66,8 +91,6 @@ export default function TableDataComp({ data, isDeadlineClosed }: any) {
 
   return (
     <div className="w-full flex flex-col animate-fade-in">
-      
-      {/* Tabel dengan custom scrollbar horizontal */}
       <div className="overflow-x-auto w-full custom-scrollbar">
         <table className="w-full min-w-max text-left border-collapse whitespace-nowrap md:whitespace-normal">
           <thead className="bg-[#172135]/30 text-slate-300 text-[10px] md:text-xs font-semibold uppercase tracking-[0.10em] md:tracking-[0.12em]">
@@ -99,22 +122,6 @@ export default function TableDataComp({ data, isDeadlineClosed }: any) {
                 else if (globalRank === 2) badgeStyle = 'border-slate-300/50 bg-slate-400/15 text-slate-200';
                 else if (globalRank === 3) badgeStyle = 'border-amber-600/60 bg-amber-600/15 text-amber-500';
 
-                // ==========================================
-                // KALKULASI RINCIAN NILAI
-                // ==========================================
-                
-                // 1. Rincian Kelengkapan Berkas
-                const poinIpynb = team.has_ipynb ? 5 : 0;
-                const poinLaporan = team.has_laporan ? 5 : 0;
-                const poinPpt = team.has_ppt ? 5 : 0;
-                const totalPoinBerkas = poinIpynb + poinLaporan + poinPpt;
-                
-                // 2. Rincian Penilaian Panitia
-                const scoreIpynb = team.score_ipynb ?? 0;
-                const scoreLaporan = team.score_laporan ?? 0;
-                const scorePpt = team.score_ppt ?? 0;
-                const poinPanitia = scoreIpynb + scoreLaporan + scorePpt;
-
                 return (
                   <tr key={team.id} className="hover:bg-[#25344f]/30 transition-colors duration-150">
                     <td className="py-3 px-3 md:py-4 md:px-5 text-center align-middle">
@@ -141,47 +148,49 @@ export default function TableDataComp({ data, isDeadlineClosed }: any) {
                     {isDeadlineClosed && (
                       <>
                         <td className="py-3 px-2 md:py-4 md:px-4 text-center font-mono text-slate-300 align-middle">
-                          {team.final_points !== null ? team.poinPeringkat : '-'}
+                          {team.calculated_final_points !== null ? team.poinPeringkat : '-'}
                         </td>
 
-                        {/* KOLOM KELENGKAPAN FILE (DENGAN RINCIAN BOX) */}
                         <td className="py-3 px-2 md:py-4 md:px-4 text-center align-middle">
-                          {team.final_points !== null ? (
-                            <div className="flex flex-col items-center justify-center">
-                              <span className="font-mono text-emerald-300 font-bold text-sm md:text-base">
-                                +{totalPoinBerkas}
+                          {team.calculated_final_points !== null ? (
+                            <div className="relative group inline-flex flex-col items-center justify-center cursor-help">
+                              <span className="font-mono text-emerald-300 font-bold text-sm md:text-base border-b border-dashed border-emerald-500/50 pb-0.5">
+                                +{team.totalPoinBerkas} <span className="text-[10px] opacity-70">ⓘ</span>
                               </span>
-                              <div className="mt-1 flex flex-col w-full max-w-[110px] bg-[#0a101d]/60 rounded border border-emerald-500/20 p-1.5 text-[9px] font-mono text-emerald-200/80 tracking-wide gap-0.5">
-                                <div className="flex justify-between w-full">
-                                  <span>Code:</span> <span>{poinIpynb}</span>
+                              
+                              <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col w-36 bg-[#131b2c] rounded-lg border border-emerald-500/40 p-2 text-[10px] shadow-2xl z-50">
+                                <div className="text-center text-slate-300 border-b border-slate-700 pb-1 mb-1 font-sans font-semibold">Rincian Berkas</div>
+                                <div className="flex justify-between w-full text-emerald-200">
+                                  <span>IPYNB:</span> <span className="font-mono">{team.poinIpynb}/5</span>
                                 </div>
-                                <div className="flex justify-between w-full">
-                                  <span>Lap:</span> <span>{poinLaporan}</span>
+                                <div className="flex justify-between w-full text-emerald-200">
+                                  <span>Laporan:</span> <span className="font-mono">{team.poinLaporan}/5</span>
                                 </div>
-                                <div className="flex justify-between w-full">
-                                  <span>PPT:</span> <span>{poinPpt}</span>
+                                <div className="flex justify-between w-full text-emerald-200">
+                                  <span>PPT:</span> <span className="font-mono">{team.poinPpt}/5</span>
                                 </div>
                               </div>
                             </div>
                           ) : '-'}
                         </td>
                         
-                        {/* KOLOM PENILAIAN PANITIA (DENGAN RINCIAN BOX) */}
                         <td className="py-3 px-2 md:py-4 md:px-4 text-center align-middle">
-                          {team.final_points !== null ? (
-                            <div className="flex flex-col items-center justify-center">
-                              <span className="font-mono text-purple-300 font-bold text-sm md:text-base">
-                                +{poinPanitia}
+                          {team.calculated_final_points !== null ? (
+                            <div className="relative group inline-flex flex-col items-center justify-center cursor-help">
+                              <span className="font-mono text-purple-300 font-bold text-sm md:text-base border-b border-dashed border-purple-500/50 pb-0.5">
+                                +{team.poinPanitia} <span className="text-[10px] opacity-70">ⓘ</span>
                               </span>
-                              <div className="mt-1 flex flex-col w-full max-w-[110px] bg-[#0a101d]/60 rounded border border-purple-500/20 p-1.5 text-[9px] font-mono text-purple-200/80 tracking-wide gap-0.5">
-                                <div className="flex justify-between w-full">
-                                  <span>Code:</span> <span>{scoreIpynb}</span>
+                              
+                              <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col w-36 bg-[#131b2c] rounded-lg border border-purple-500/40 p-2 text-[10px] shadow-2xl z-50">
+                                <div className="text-center text-slate-300 border-b border-slate-700 pb-1 mb-1 font-sans font-semibold">Rincian Panitia</div>
+                                <div className="flex justify-between w-full text-purple-200">
+                                  <span>Code:</span> <span className="font-mono">{team.scoreIpynb}/30</span>
                                 </div>
-                                <div className="flex justify-between w-full">
-                                  <span>Lap:</span> <span>{scoreLaporan}</span>
+                                <div className="flex justify-between w-full text-purple-200">
+                                  <span>Laporan:</span> <span className="font-mono">{team.scoreLaporan}/15</span>
                                 </div>
-                                <div className="flex justify-between w-full">
-                                  <span>PPT:</span> <span>{scorePpt}</span>
+                                <div className="flex justify-between w-full text-purple-200">
+                                  <span>PPT:</span> <span className="font-mono">{team.scorePpt}/15</span>
                                 </div>
                               </div>
                             </div>
@@ -191,11 +200,11 @@ export default function TableDataComp({ data, isDeadlineClosed }: any) {
                     )}
 
                     <td className="py-3 px-3 md:py-4 md:px-5 text-right font-mono text-[#ffec1f] font-extrabold text-sm md:text-base tracking-wide bg-[#131b2c]/20 align-middle">
-                    {isDeadlineClosed 
-                      ? (team.final_points !== null ? team.final_points : '-') 
-                      : '0'
-                    }
-                  </td>
+                      {isDeadlineClosed 
+                        ? (team.calculated_final_points !== null ? team.calculated_final_points : '-') 
+                        : '0'
+                      }
+                    </td>
                   </tr>
                 );
               })
@@ -204,7 +213,7 @@ export default function TableDataComp({ data, isDeadlineClosed }: any) {
         </table>
       </div> 
       
-      {/* Paginasi tetap di luar area scroll */}
+      {/* Pagination control tetap sama */}
       {data.length > 0 && (
         <div className="px-5 py-4 border-t border-slate-600/30 bg-[#131b2c]/40 flex items-center justify-between w-full mt-auto">
           <span className="text-[10px] md:text-xs text-slate-400 font-medium">Menampilkan {startIndex + 1}-{Math.min(startIndex + itemsPerPage, data.length)} dari {data.length} tim</span>
@@ -215,7 +224,6 @@ export default function TableDataComp({ data, isDeadlineClosed }: any) {
           </div>
         </div>
       )}
-
     </div>
   );
 }
