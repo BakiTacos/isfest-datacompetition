@@ -40,7 +40,10 @@ async function getLeaderboardData(): Promise<TeamLeaderboard[]> {
         has_laporan,
         has_mockup,
         has_video,
-        has_prototype
+        has_prototype,
+        score_ppt,
+        score_ipynb,
+        score_laporan
       `) 
       // NullsFirst: false memastikan UI/UX (yang RMSE-nya null) berada di bawah sebelum di-sort ulang oleh Frontend
       .order('best_rmse', { ascending: true, nullsFirst: false })
@@ -63,7 +66,10 @@ async function getLeaderboardData(): Promise<TeamLeaderboard[]> {
       has_laporan: team.has_laporan ?? false,
       has_mockup: team.has_mockup ?? false,
       has_video: team.has_video ?? false,
-      has_prototype: team.has_prototype ?? false
+      has_prototype: team.has_prototype ?? false,
+      score_ipynb: team.score_ipynb ?? 0,      /* TAMBAHKAN INI */
+      score_laporan: team.score_laporan ?? 0,  /* TAMBAHKAN INI */
+      score_ppt: team.score_ppt ?? 0
     }));
   } catch (err: any) {
     console.error('🚨 Critical Server Error:', err.message);

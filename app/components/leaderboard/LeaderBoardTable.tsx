@@ -7,7 +7,7 @@ import TableUIUX from './TableUIUX';
 export interface TeamLeaderboard {
   id: string;
   team_name: string;
-  jenis_lomba: string; // Harus ditarik dari Supabase di page.tsx
+  jenis_lomba: string; 
   best_rmse?: number | null;
   final_points?: number | null;
   has_ipynb?: boolean;
@@ -16,6 +16,9 @@ export interface TeamLeaderboard {
   has_mockup?: boolean;
   has_video?: boolean;
   has_prototype?: boolean;
+  score_ipynb?: number;
+  score_laporan?: number;
+  score_ppt?: number;
 }
 
 interface LeaderboardTableProps {
@@ -30,19 +33,24 @@ export default function LeaderboardTable({ data, isDeadlineClosed }: Leaderboard
   const filteredData = data.filter(team => team.jenis_lomba === activeTab);
 
   return (
-    <div className="bg-[#172135]/40 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden border border-slate-600/30 backdrop-blur-md flex flex-col">
+    // ✨ PERBAIKAN: Pastikan kontainer utama memiliki w-full dan overflow-hidden agar ukurannya tidak jebol
+    <div className="bg-[#172135]/40 rounded-2xl shadow-2xl shadow-black/40 border border-slate-600/30 backdrop-blur-md flex flex-col w-full overflow-hidden">
       
       {/* Header & Navigasi Tabs */}
-      <div className="px-5 py-4 md:px-8 border-b border-slate-600/30 flex flex-col md:flex-row md:items-center justify-between bg-[#131b2c]/50 gap-4">
-        <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
+      {/* ✨ PERBAIKAN: Ubah padding menjadi px-4 md:px-6 agar tidak terlalu tebal di HP */}
+      <div className="px-4 py-4 md:px-6 border-b border-slate-600/30 flex flex-col sm:flex-row sm:items-center justify-between bg-[#131b2c]/50 gap-3 md:gap-4">
+        
+        {/* ✨ PERBAIKAN: Kurangi sedikit ukuran teks header di HP (text-lg) dan tambahkan truncate agar aman jika layar sangat kecil */}
+        <h2 className="text-lg md:text-xl font-bold text-white tracking-wide text-center sm:text-left truncate">
           {isDeadlineClosed ? 'Papan Peringkat Akhir' : 'Leaderboard'}
         </h2>
         
-        {/* Toggle Navigasi Lomba */}
-        <div className="flex bg-[#0a101d]/80 p-1 rounded-xl border border-slate-700/50">
+        <div className="flex w-full sm:w-auto bg-[#0a101d]/80 p-1 rounded-xl border border-slate-700/50">
+          
+          {/* ✨ PERBAIKAN: Tambahkan whitespace-nowrap dan kecilkan font di HP (text-[10px]) */}
           <button 
             onClick={() => setActiveTab('Data Competition')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            className={`flex-1 sm:flex-none whitespace-nowrap px-3 md:px-4 py-2.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all ${
               activeTab === 'Data Competition' 
                 ? 'bg-[#172135] text-emerald-400 shadow-md border border-slate-600/50' 
                 : 'text-slate-500 hover:text-slate-300'
@@ -50,9 +58,11 @@ export default function LeaderboardTable({ data, isDeadlineClosed }: Leaderboard
           >
             Data Competition
           </button>
+          
+          {/* ✨ PERBAIKAN: Sama untuk UI/UX */}
           <button 
             onClick={() => setActiveTab('UI/UX')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            className={`flex-1 sm:flex-none whitespace-nowrap px-3 md:px-4 py-2.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all ${
               activeTab === 'UI/UX' 
                 ? 'bg-[#172135] text-blue-400 shadow-md border border-slate-600/50' 
                 : 'text-slate-500 hover:text-slate-300'
@@ -60,6 +70,7 @@ export default function LeaderboardTable({ data, isDeadlineClosed }: Leaderboard
           >
             UI/UX
           </button>
+
         </div>
       </div>
 

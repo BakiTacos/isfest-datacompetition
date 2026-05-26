@@ -20,7 +20,8 @@ function calculateBaselineScore(
   else if (globalRank === 5) rankScore = 21;
   else if (globalRank >= 6 && globalRank <= 10) rankScore = 20;
   else if (globalRank >= 11 && globalRank <= 20) rankScore = 15;
-  else rankScore = 10; // Peringkat 21 ke bawah (atau yang tidak submit)
+  else if (globalRank === 999) rankScore = 0; // Tim yang tidak mengumpulkan berkas/RMSE null
+  else rankScore = 10; 
 
   let fileScore = 0;
   if (hasIpynb) fileScore += 5;
@@ -52,7 +53,8 @@ export async function POST(request: Request) {
     if (isDeadlineClosed === true) {
       const { data: teams, error: fetchError } = await supabaseAdmin
         .from('teams')
-        .select('id, team_name, best_rmse, has_ipynb, has_ppt, has_laporan, jenis_lomba')
+        // ✨ PERBAIKAN 1: Tarik kolom rincian skor panitia dari database
+        .select('id, team_name, best_rmse, has_ipynb, has_ppt, has_laporan, jenis_lomba, score_ipynb, score_laporan, score_ppt')
         .eq('jenis_lomba', 'Data Competition') 
         .order('best_rmse', { ascending: true, nullsFirst: false })
         .order('updated_at', { ascending: true });
@@ -60,10 +62,8 @@ export async function POST(request: Request) {
       if (fetchError) throw fetchError;
 
       if (teams && teams.length > 0) {
-        // PERBAIKAN 1: Jadikan callback map sebagai async function
         const updatePromises = teams.map(async (team, index) => {
           
-          // PERBAIKAN 2: Jika belum pernah submit (null), paksa rank jadi 999
           const globalRank = team.best_rmse !== null ? (index + 1) : 999; 
 
           const baselineScore = calculateBaselineScore(
@@ -73,12 +73,15 @@ export async function POST(request: Request) {
             team.has_laporan ?? false
           );
 
-          // PERBAIKAN 3: Ekstrak error dan lemparkan secara eksplisit
+          // ✨ PERBAIKAN 2: Hitung total nilai akhir gabungan (Baseline + Input Juri)
+          const totalPoinPanitia = (team.score_ipynb ?? 0) + (team.score_laporan ?? 0) + (team.score_ppt ?? 0);
+          const totalFinalScore = baselineScore + totalPoinPanitia;
+
           const { error: updateError } = await supabaseAdmin
             .from('teams')
             .update({ 
               baseline_score: baselineScore,
-              final_score: baselineScore
+              final_score: totalFinalScore // ✨ Gunakan total akumulasi nilai asli
             })
             .eq('id', team.id);
 
@@ -91,9 +94,10 @@ export async function POST(request: Request) {
         await Promise.all(updatePromises);
       }
     } else {
+      // Saat portal dibuka kembali, reset final_score ke null agar rincian tersembunyi
       await supabaseAdmin
         .from('teams')
-        .update({ final_score: null, baseline_score: 0 }) // Reset keduanya
+        .update({ final_score: null, baseline_score: 0 }) 
         .eq('jenis_lomba', 'Data Competition');
     }
 
