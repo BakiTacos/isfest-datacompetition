@@ -64,10 +64,6 @@ export default function TableDataComp({ data, isDeadlineClosed }: any) {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentData = sortedData.slice(startIndex, startIndex + itemsPerPage);
 
-  const SecretPoint = () => (
-    <span className="text-slate-600 font-bold opacity-50">?</span>
-  );
-
   return (
     <div className="w-full flex flex-col animate-fade-in">
       
@@ -195,11 +191,11 @@ export default function TableDataComp({ data, isDeadlineClosed }: any) {
                     )}
 
                     <td className="py-3 px-3 md:py-4 md:px-5 text-right font-mono text-[#ffec1f] font-extrabold text-sm md:text-base tracking-wide bg-[#131b2c]/20 align-middle">
-                      {isDeadlineClosed 
-                        ? (team.final_points !== null ? team.final_points : '-') 
-                        : <SecretPoint />
-                      }
-                    </td>
+                    {isDeadlineClosed 
+                      ? (team.final_points !== null ? team.final_points : '-') 
+                      : '0'
+                    }
+                  </td>
                   </tr>
                 );
               })
