@@ -22,7 +22,7 @@ export default function AdminCheckPage() {
     const fetchConfigsAndTeams = async () => {
       try {
         const [configRes, teamsRes] = await Promise.all([
-          fetch('/api/config'), // Pastikan endpoint GET /api/config me-return { isDeadlineClosed, isOpen }
+          fetch('/api/config'), 
           fetch('/api/admin/teams')
         ]);
         
@@ -45,7 +45,6 @@ export default function AdminCheckPage() {
       const res = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Endpoint POST /api/config Anda harus mampu menerima dan memperbarui kedua kunci ini
         body: JSON.stringify({ [key === 'is_deadline_closed' ? 'isDeadlineClosed' : 'isOpen']: targetState }),
       });
 
@@ -64,24 +63,89 @@ export default function AdminCheckPage() {
     }
   };
 
-  // Handler: Update Field Tim (Checkbox / Input Nilai)
+  // Handler: Update Field Tim (Checkbox / Input Nilai) + Kalkulasi Otomatis
   const handleUpdateTeamField = async (teamId: string, field: string, value: any) => {
+    let calculatedFinalScore: number | null = null;
+
+    // 1. UPDATE STATE LOKAL & KALKULASI (Real-time di UI Admin)
+    setTeams(prevTeams => {
+      // Buat salinan data terbaru dengan field yang diubah admin
+      const updatedTeams = prevTeams.map(team => 
+        team.id === teamId ? { ...team, [field]: value } : team
+      );
+
+      // Kalkulasi khusus Data Competition
+      if (activeTab === 'Data Competition') {
+        const dcTeams = updatedTeams.filter(t => (t.jenis_lomba || 'Data Competition') === 'Data Competition');
+        
+        // Urutkan berdasarkan RMSE untuk mendapatkan peringkat yang presisi
+        dcTeams.sort((a, b) => {
+          if (a.best_rmse === null) return 1;
+          if (b.best_rmse === null) return -1;
+          return a.best_rmse - b.best_rmse;
+        });
+
+        // Cari tim target dan tentukan poin peringkatnya
+        const targetIndex = dcTeams.findIndex(t => t.id === teamId);
+        const targetTeam = dcTeams[targetIndex];
+
+        if (targetTeam && targetTeam.best_rmse !== null) {
+          const rmseRank = targetIndex + 1;
+          
+          let poinPeringkat = 0;
+          if (rmseRank === 1) poinPeringkat = 25;
+          else if (rmseRank === 2) poinPeringkat = 24;
+          else if (rmseRank === 3) poinPeringkat = 23;
+          else if (rmseRank === 4) poinPeringkat = 22;
+          else if (rmseRank === 5) poinPeringkat = 21;
+          else if (rmseRank >= 6 && rmseRank <= 10) poinPeringkat = 20;
+          else if (rmseRank >= 11 && rmseRank <= 20) poinPeringkat = 15;
+          else poinPeringkat = 10;
+
+          // Hitung nilai berkas
+          const poinIpynb = targetTeam.has_ipynb ? 5 : 0;
+          const poinLaporan = targetTeam.has_laporan ? 5 : 0;
+          const poinPpt = targetTeam.has_ppt ? 5 : 0;
+          
+          // Hitung nilai panitia
+          const scoreIpynb = Number(targetTeam.score_ipynb || 0);
+          const scoreLaporan = Number(targetTeam.score_laporan || 0);
+          const scorePpt = Number(targetTeam.score_ppt || 0);
+
+          // Totalkan dan simpan ke variabel untuk dikirim ke database
+          calculatedFinalScore = poinPeringkat + poinIpynb + poinLaporan + poinPpt + scoreIpynb + scoreLaporan + scorePpt;
+          
+          // Inject nilai baru ke state lokal agar langsung tampil di layar admin
+          targetTeam.final_score = calculatedFinalScore;
+        }
+      }
+
+      return updatedTeams;
+    });
+
+    // 2. KIRIM UPDATE KE DATABASE (Supabase melalui API Route)
     try {
+      // Request A: Simpan field spesifik yang baru saja diubah (misal: score_ipynb)
       const res = await fetch('/api/admin/teams', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teamId, field, value }),
       });
 
-      if (res.ok) {
-        setTeams(prevTeams => 
-          prevTeams.map(team => team.id === teamId ? { ...team, [field]: value } : team)
-        );
-      } else {
-        alert('Gagal memperbarui data tim.');
+      if (!res.ok) throw new Error('Gagal update field nilai mentah');
+
+      // Request B: Simpan `final_score` yang baru dikalkulasi ke kolom database
+      if (activeTab === 'Data Competition' && calculatedFinalScore !== null) {
+        await fetch('/api/admin/teams', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          // Kolom final_score akan ditimpa dengan nilai kalkulasi terbaru
+          body: JSON.stringify({ teamId, field: 'final_score', value: calculatedFinalScore }),
+        });
       }
     } catch (err) {
-      alert('Terjadi kesalahan jaringan saat update data.');
+      console.error(err);
+      alert('Terjadi kesalahan jaringan saat menyimpan ke database.');
     }
   };
 

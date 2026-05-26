@@ -14,6 +14,8 @@ export interface TeamAdminData {
   score_ipynb?: number;
   score_laporan?: number;
   score_ppt?: number;
+
+  best_rmse: number | null;
   final_score?: number; // Digunakan untuk total poin akhir UI/UX
 }
 
